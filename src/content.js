@@ -10,7 +10,7 @@ window.addEventListener('message', (event) => {
         const nodes = [].slice.call(document.querySelectorAll('canvas'));
         if (nodes.length > 0) {
             hasCocosGameCanvas = nodes.find(function (node) {
-                return node.id && node.id.indexOf('cc-game') >= 0;
+                return node.id && node.id.indexOf('cc-game') > -1;
             })
         }
     }

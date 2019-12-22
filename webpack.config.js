@@ -20,7 +20,7 @@ const baseConfig = {
     "background": "./src/background.js",
     "devtools": "./src/devtools.js",
     "content": "./src/content.js",
-    "inspector": "./src/inspector.js"
+    "injected": "./src/injected.js"
   },
   output: {
     filename: "[name].bundle.js",
@@ -45,6 +45,14 @@ const baseConfig = {
         }
       },
       {
+        test: /\.(woff2?|eot|ttf|otf)(\?.*)?$/,
+        loader: 'url-loader'
+      },
+      {
+        test: /\.css$/,
+        loaders: ["style-loader", "css-loader"]
+      },
+      {
         test: /\.scss$/,
         loaders: ["style-loader", "css-loader", "sass-loader"]
       },
@@ -61,8 +69,7 @@ const baseConfig = {
   plugins: [
     new webpack.DefinePlugin({
       "process.env": {
-        NODE_ENV: JSON.stringify(process.env.NODE_ENV),
-        DEBUG_DEVTOOLS_RX: JSON.stringify(process.env.DEBUG_DEVTOOLS_RX)
+        NODE_ENV: JSON.stringify(process.env.NODE_ENV)
       }
     }),
     new VueLoaderPlugin(),
