@@ -153,7 +153,7 @@ export default {
 			name: "" + tabId
 		});
 		conn.postMessage({
-			name: "cc-devtool:panelPageCreated",
+			name: "cc-devtool: panelPageCreated",
 			tabId
 		});
 		log(`Connecting to window #${tabId}`);
@@ -161,11 +161,11 @@ export default {
 			if (!message) return;
 			log(message);
 			switch (message.type) {
-				case "cc-devtool:inspectedWinReloaded":
+				case "cc-devtool: inspectedWinReloaded":
 					location.reload();
 					break;
-				case "cc-devtool:gameOnShow":
-				case "cc-devtool:loadScene":
+				case "cc-devtool: gameOnShow":
+				case "cc-devtool: loadScene":
 					this.init();
 					break;
 			}
@@ -247,12 +247,11 @@ export default {
 		},
 		loadTreeNodes() {
 			return this.ccdevtool.getTreeNodes().then(treeNode => {
-				this.ccdevtool.createDebugLayer();
+				this.ccdevtool.createInspectLayer();
 				if (!treeNode) {
 					error("Get Tree Nodes information failed!");
 					Message.warning({
-						message:
-							"You may need to click the refresh button to reload the node tree!"
+						message: "You may need to click the refresh button to reload the node tree!"
 					});
 				} else {
 					this.treeNode = [treeNode];
@@ -330,19 +329,19 @@ export default {
 					}
 				});
 			};
-			return new Promise((rs, rj) => {
-				// TODO:使用setTimeout实现
-				var timer = setInterval(() => {
+			return new Promise((resolve, reject) => {
+				let timer = 0;
+				const checkCCDevtool = () => {
 					doEval();
 					tryTimes -= 1;
-					if (
-						tryTimes <= 0 ||
-						(vm.ccdevtool && Object.keys(vm.ccdevtool).length > 0)
-					) {
-						clearInterval(timer);
-						rs();
+					if (tryTimes <= 0 || (vm.ccdevtool && Object.keys(vm.ccdevtool).length > 0)) {
+						timer && clearTimeout(timer);
+						resolve();
+					} else {
+						checkCCDevtool();
 					}
-				}, 1000);
+				}
+				checkCCDevtool();
 			});
 		}
 	}

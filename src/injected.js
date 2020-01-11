@@ -59,21 +59,11 @@ export default function () {
 		"enabledInHierarchy",
 		"_isOnLoadCalled"
 	];
-	const DebugLayerCss = `
-    .debug-layer.show-all .debug-box,
-    .debug-box:hover,
-    .debug-box.selected {
-      outline: 1px dashed rgba(255,0,0,.8);
-    }
-    #cc-devtool-debug {
-      background-color: rgba(0,0,0,0.1);
-    }`;
 	const noop = new Function();
 	const NodesCache = {}; // Node cache which contains cc.Node refs
 	const NodesCacheData = {}; // Node data cache
-	const DebugLayerId = "cc-devtool-debug";
-	const DebugLayerStyleId = "cc-devtool-style";
-	const ccdevtool = (window.ccdevtool = {
+	const InspectLayerId = "cc-devtool-inspect-layer";
+	const ccdevtool = window.ccdevtool = {
 		nodeId: 1,
 		NodesCacheData,
 		/**
@@ -98,7 +88,6 @@ export default function () {
 			return ret;
 		},
 		compile() {
-			fetch("/update-db");
 			setTimeout(location.reload, 2000);
 		},
 		/**
@@ -143,66 +132,27 @@ export default function () {
 		/**
 		 * Create debugging div
 		 */
-		createDebugLayer() {
-			var debugLayer = document.getElementById(DebugLayerId);
-			if (debugLayer) {
-				debugLayer.parentNode.removeChild(debugLayer);
+		createInspectLayer() {
+			var inspectLayer = document.getElementById(InspectLayerId);
+			if (inspectLayer) {
+				return;
 			}
-			debugLayer = document.createElement("div");
-			debugLayer.id = DebugLayerId;
-			debugLayer.classList.add("cc-devtool");
-			debugLayer.classList.add("debug-layer");
-			const s = debugLayer.style;
-			s.position = "absolute";
-			s.top = s.bottom = s.left = s.right = 0;
-
-			const ctn = document.querySelector("#Cocos2dGameContainer");
-			ctn.position = "relative";
-			ctn.appendChild(debugLayer);
-
-			// style
-			var style = document.getElementById(DebugLayerStyleId);
-			if (!style) style = document.createElement("style");
-			style.id = DebugLayerStyleId;
-			style.innerHTML = DebugLayerCss;
-			document.body.appendChild(style);
-		},
-		/**
-		 * Create debugging box for given node on debug layer
-		 * @param  {cc.Node} n
-		 * @param  {Number} zIndex
-		 */
-		createDebugBox(n, zIndex) {
-			const nodeInfo = NodesCacheData[n.uuid];
-			if (!nodeInfo || !nodeInfo.box) return;
-			var div = document.getElementById(n.uuid);
-			if (div) {
-				div.parentNode.removeChild(div);
-			}
-			const hratio = 1,
-				vratio = 1;
-
-			const box = nodeInfo.box;
-			div = document.createElement("div");
-			n.debugBox = div;
-			div.id = n.uuid;
-			div.classList.add("cc-devtool");
-			div.classList.add("debug-box");
-
-			const s = div.style;
-			s.position = "absolute";
-			s.width = box.width / hratio + "px";
-			s.height = box.height / vratio + "px";
-			s.bottom = box.bottom / vratio + "px";
-			s.left = box.left / hratio + "px";
-			// s.outline = '1px solid #eee';
-			s.outlineOffset = "0px";
-			s.zIndex = zIndex;
-			s.innerText = nodeInfo.label;
-			div.dataset.name = nodeInfo.label;
-
-			const debugLayer = document.getElementById(DebugLayerId);
-			debugLayer.appendChild(div);
+			inspectLayer = document.createElement('canvas');
+			const ccCanvas = document.getElementById('GameCanvas');
+			inspectLayer.width = ccCanvas.width;
+			inspectLayer.height = ccCanvas.height;
+			const { x: bx, y: by } = document.body.getBoundingClientRect();
+			const { x: ccx, y: ccy } = ccCanvas.getBoundingClientRect();
+			inspectLayer.style.cssText = `
+				top: ${by - ccy};
+				left: ${ccx - bx};
+				width: ${ccCanvas.style.width};
+				height: ${ccCanvas.style.height};
+				z-index: 999999;
+				pointer-events: none;
+			`
+			inspectLayer.id = InspectLayerId;
+			document.body.appendChild(inspectLayer);
 		},
 		/**
 		 * Set helper variable $n0, $n1
@@ -310,7 +260,7 @@ export default function () {
 			});
 			return ret;
 		}
-	});
+	};
 	/**
 	 * Hijack cc.director.loadScene()
 	 * when loadScene is called, notify cc-devtool panel to refresh node tree
@@ -318,7 +268,7 @@ export default function () {
 	if (cc.director && typeof cc.director.loadScene === "function") {
 		let loadScene = cc.director.loadScene;
 		cc.director.loadScene = function () {
-			ccdevtool.postMessage("cc-devtool:loadScene");
+			ccdevtool.postMessage("cc-devtool: loadScene");
 			return loadScene.apply(cc.director, arguments);
 		};
 	}
@@ -345,7 +295,7 @@ export default function () {
 		"background:transparent"
 	);
 
-	ccdevtool.postMessage(":cc-found", true);
+	ccdevtool.postMessage("cc-devtool: cc-found", true);
 
 	/**
 	 * Get components data from given node

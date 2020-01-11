@@ -26,7 +26,6 @@ chrome.runtime.onConnect.addListener(function (port) {
 	port.onMessage.addListener(onMessage);
 	port.onDisconnect.addListener(function (port) {
 		port.onMessage.removeListener(onMessage);
-		// remove the connection from the list
 		const port = Object.keys(ports);
 		const tabIds = Object.keys(ports);
 		for (let i = 0; i < tabIds.length; i++) {

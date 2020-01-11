@@ -18,12 +18,12 @@ chrome.devtools.inspectedWindow.eval(
 function createCocosCreatorDevtoolPanel() {
 	chrome.devtools.panels.create(tabTitle, icon, html, panel => {
 		"Shown,Hidden,Search".split(",").forEach(event => {
-			panel["on" + event].addListener(function (arg1, arg2) {
+			panel["on" + event].addListener(function () {
 				if (event === "Hidden") {
 					window.app.onHidden();
 				}
 				chrome.runtime.sendMessage({
-					type: ":cc-devtool-" + event.toLowerCase()
+					type: "cc-devtool: cc-devtool-" + event.toLowerCase()
 				});
 			});
 		});
