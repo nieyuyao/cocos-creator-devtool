@@ -1,7 +1,7 @@
 <template>
 	<div class="main">
 		<ElHeader>
-			<img class="logo" src="../chrome-extension/icons/icon-48.png" alt />
+			<img class="logo" src="../../icons/icon-128.png" />
 			<h1>
 				<a href="https://docs.cocos.com/creator/manual/zh/" target="_blank">Cocos Creator Devtool</a>
 			</h1>

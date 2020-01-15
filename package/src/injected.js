@@ -235,6 +235,9 @@ export default function () {
 			this.nodeId = 1;
 			// 如果场景已经被加载序列化场景
 			if (scene) {
+				if (!scene.name) {
+					scene.name = 'Scene';
+				}
 				ret = this.serialize(scene, true);
 			}
 			return ret;

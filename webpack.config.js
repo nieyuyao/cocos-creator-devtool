@@ -6,7 +6,6 @@ const FriendlyErrorsPlugin = require("friendly-errors-webpack-plugin");
 const {
 	VueLoaderPlugin
 } = require("vue-loader");
-const UglifyJsPlugin = require("uglifyjs-webpack-plugin");
 
 if (!process.env.NODE_ENV) {
 	process.env.NODE_ENV =
@@ -17,10 +16,10 @@ const mode = process.env.NODE_ENV;
 const baseConfig = {
 	mode,
 	entry: {
-		'devtools-background': "./src/devtools-background.js",
-		background: "./src/background.js",
-		devtools: "./src/devtools.js",
-		content: "./src/content.js"
+		'devtools-background': "./package/src/devtools-background.js",
+		background: "./package/src/background.js",
+		devtools: "./package/src/devtools.js",
+		content: "./package/src/content.js"
 	},
 	output: {
 		filename: "[name].bundle.js",
@@ -28,15 +27,14 @@ const baseConfig = {
 		publicPath: "/"
 	},
 	module: {
-		rules: [{
+		rules: [
+			{
 				test: /\.js$/,
-				include: path.join(__dirname, "/src"),
 				loader: "babel-loader"
 			},
 			{
 				test: /\.vue$/,
 				loader: "vue-loader",
-				include: path.join(__dirname, "/src"),
 				options: {
 					loaders: {
 						scss: ["style-loader", "css-loader", "sass-loader"]
@@ -68,13 +66,15 @@ const baseConfig = {
 		}),
 		new VueLoaderPlugin(),
 		new CopyWebpackPlugin([{
-			context: "src/chrome-extension",
-			from: "**/*"
-		}]),
-		new UglifyJsPlugin()
+			context: 'package/',
+			from: '**/*',
+			ignore: [
+				'src/**/*'
+			]
+		}])
 	],
-	performance: {
-		hints: false
+	optimization: {
+		minimize: mode === 'production' ? true : false
 	}
 };
 let devConfig = baseConfig;
