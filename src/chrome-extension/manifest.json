@@ -4,29 +4,32 @@
     "description": "Developer Tools for inspecting and debugging games written with CocosCreator",
     "version": "1.0",
     "icons": {
-      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png",
       "48": "icons/icon-48.png",
       "128": "icons/icon-128.png"
     },
     "browser_action": {
       "default_icon": {
-        "16": "icons/icon-16.png",
+        "32": "icons/icon-32.png",
         "48": "icons/icon-48.png",
         "128": "icons/icon-128.png"
       },
       "default_title": "CocosCreator Inspector",
-      "default_popup": "popups/nofound.html"
+      "default_popup": "popups/not-found.html"
     },
-    "devtools_page": "devtools.html",
+    "devtools_page": "devtools-background.html",
     "content_scripts": [
       {
         "matches": ["<all_urls>"],
-        "js": ["content-bundle.js"],
+        "js": ["content.bundle.js"],
         "all_frames": true,
         "run_at": "document_end"
       }
     ],
-    "permissions": ["<all_urls>"],
+    "permissions": [
+      "webNavigation",
+      "<all_urls>"
+    ],
     "background": {
       "scripts": [
         "background.bundle.js"

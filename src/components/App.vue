@@ -6,7 +6,7 @@
 				<a href="https://docs.cocos.com/creator/manual/zh/" target="_blank">Cocos Creator Devtool</a>
 			</h1>
 			<ElCheckbox v-model="isShowFps">FPS Panel</ElCheckbox>
-			<ElCheckbox v-show="hasEruda" v-model="isShowErudaBtn">Eruda Button</ElCheckbox>
+			<ElCheckbox v-model="isShowInspectLayer">Inspect Layer</ElCheckbox>
 			<ElButton
 				@click="refreshTree"
 				id="refresh-btn"
@@ -120,12 +120,13 @@
 
 <script>
 import injectedScript from '../injected';
+import { log } from '../utils';
 export default {
 	name: "App",
 	mixins: [],
 	data() {
 		return {
-			isShowDebugLayer: false,
+			isShowInspectLayer: false,
 			isShowFps: true,
 			isShowErudaBtn: true,
 			treeNode: [],
@@ -136,67 +137,68 @@ export default {
 		};
 	},
 	mounted() {
-		if (localStorage.getItem("showTip") !== "true") {
-			Notification.info({
-				duration: 0,
-				message:
-					"Tip: You can use Cmd/Ctrl/Shift to alter step when click +/- buttons",
-				onClose() {
-					localStorage.setItem("showTip", true);
-				}
-			});
-		}
-		window.app = this;
-		this.inspectedWindow = chrome.devtools.inspectedWindow;
-		const tabId = chrome.devtools.inspectedWindow.tabId;
-		const conn = chrome.runtime.connect({
-			name: "" + tabId
-		});
-		conn.postMessage({
-			name: "cc-devtool: panelPageCreated",
-			tabId
-		});
-		log(`Connecting to window #${tabId}`);
-		conn.onMessage.addListener(message => {
-			if (!message) return;
-			log(message);
-			switch (message.type) {
-				case "cc-devtool: inspectedWinReloaded":
-					location.reload();
-					break;
-				case "cc-devtool: gameOnShow":
-				case "cc-devtool: loadScene":
-					this.init();
-					break;
-			}
-		});
-		// TODO: 此时直接执行，有可能场景还未加载完
+		this.connect();
 		this.init();
 	},
 	watch: {
 		filterText(val) {
 			this.$refs.tree.filter(val);
 		},
-		isShowDebugLayer(val) {
-			this.ccdevtool.toggleElement("#cc-devtool-debug", val);
-			if (val) this.ccdevtool.getTreeNodes();
+		isShowInspectLayer(val) {
+			this.ccdevtool.toggleElement("#cc-devtool-inspect-layer", val);
 		},
 		isShowFps(val) {
 			this.ccdevtool.toggleElement("#fps", val);
-			this.ccdevtool.toggleNode("PROFILER-NODE", val);
-		},
-		hasEruda() {
-			return this.ccdevtool.hasElement(".eruda-entry-btn");
 		},
 		isShowErudaBtn(val) {
 			this.ccdevtool.toggleElement(".eruda-entry-btn", val);
 		}
 	},
 	methods: {
-		init() {
-			this.injectScript().then(() => {
-				this.loadTreeNodes();
+		connect() {
+			this.inspectedWindow = chrome.devtools.inspectedWindow;
+			this.tabId = chrome.devtools.inspectedWindow.tabId;
+			this.conn = chrome.runtime.connect({
+				name: `${this.tabId}`
 			});
+			log(`Connecting to window ${this.tabId}`);
+			this.conn.onMessage.addListener(message => {
+				if (!message) return;
+				log(message);
+				switch (message.name) {
+					case "cc-devtool: panel-shown":
+						this.onPanelShown();
+						break;
+					case "cc-devtool: panel-hidden":
+						this.onPanelHidden();
+						break;
+					case "cc-devtool: window-loaded":
+						location.reload();
+						break;
+					case "cc-devtool: game-show":
+					case 'cc-devtool: lauch-scene':
+						this.injectPromise
+							.then(() => {
+								this.loadTreeNodes();
+							});
+						break;
+				}
+			});
+			this.postMessage('cc-devtool: panel-created');
+		},
+		postMessage(messageName) {
+			const { conn, tabId } = this;
+			conn.postMessage({
+				name: messageName,
+				tabId
+			});
+		},
+		init() {
+			this.injectPromise = this.injectScript();
+			this.injectPromise
+				.then(() => {
+					this.loadTreeNodes();
+				});
 		},
 		eval(code) {
 			return new Promise((resolve, reject) => {
@@ -246,20 +248,12 @@ export default {
 			return row.key === "color";
 		},
 		loadTreeNodes() {
-			return this.ccdevtool.getTreeNodes().then(treeNode => {
-				this.ccdevtool.createInspectLayer();
-				if (!treeNode) {
-					error("Get Tree Nodes information failed!");
-					Message.warning({
-						message: "You may need to click the refresh button to reload the node tree!"
-					});
-				} else {
+			return this.ccdevtool.getTreeNodes()
+			.then(treeNode => {
+				if (treeNode) {
 					this.treeNode = [treeNode];
 					this.nodeProps = treeNode.props;
 					this.nodeComps = treeNode.comps;
-				}
-				if (!this.isShowDebugLayer) {
-					this.ccdevtool.hideDebugLayer();
 				}
 			});
 		},
@@ -280,25 +274,6 @@ export default {
 			if (!this.selectedNode) return;
 			this.ccdevtool.updateNode(this.selectedNode.uuid, row.key, row.value);
 		},
-		onHidden() {
-			this.ccdevtool.hideDebugLayer();
-		},
-		onMouseDown(e) {
-			var step = 1;
-			if (e.metaKey || e.ctrlKey) {
-				step = 10;
-			}
-			if (e.altKey) {
-				step = 100;
-			}
-			if (e.shiftKey) {
-				step = 0.1;
-			}
-			this.inputNumberStep = step;
-		},
-		onMouseUp(e) {
-			this.inputNumberStep = 1;
-		},
 		refreshTree() {
 			this.loadTreeNodes();
 		},
@@ -315,19 +290,24 @@ export default {
 			// inject ccdevtool
 			const fn = injectedScript.toString();
 			const js = `(${fn})();`;
-			this.eval(js).then(_ => log("ccdevtool injected!"));
-			var tryTimes = 60;
+			this.eval(js)
+				.then(() => log("ccdevtool injected!"));
+			let tryTimes = 60;
 			const vm = this;
 			const doEval = function() {
-				vm.eval("ccdevtool").then(ccdevtool => {
-					vm.ccdevtool = {};
-					for (let name in ccdevtool) {
-						vm.ccdevtool[name] = function(...args) {
-							args = JSON.stringify(args).slice(1, -1);
-							return vm.eval(`ccdevtool.${name}(${args})`);
-						};
-					}
-				});
+				vm.eval("ccdevtool")
+					.then(ccdevtool => {
+						if (vm.ccdevtool) {
+							return;
+						}
+						vm.ccdevtool = {};
+						for (let name in ccdevtool) {
+							vm.ccdevtool[name] = function(...args) {
+								args = JSON.stringify(args).slice(1, -1);
+								return vm.eval(`ccdevtool.${name}(${args})`);
+							};
+						}
+					});
 			};
 			return new Promise((resolve, reject) => {
 				let timer = 0;
@@ -338,11 +318,19 @@ export default {
 						timer && clearTimeout(timer);
 						resolve();
 					} else {
-						checkCCDevtool();
+						timer = setTimeout(checkCCDevtool, 1000);
 					}
 				}
 				checkCCDevtool();
 			});
+		},
+		// shown
+		onPanelHidden() {
+			this.isShowInspectLayer = false;
+		},
+		// hidden
+		onPanelShown() {
+			this.isShowInspectLayer = true;
 		}
 	}
 };
