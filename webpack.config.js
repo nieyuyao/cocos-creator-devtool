@@ -12,7 +12,6 @@ if (!process.env.NODE_ENV) {
 		process.argv.indexOf("-p") !== -1 ? "production" : "development";
 }
 const mode = process.env.NODE_ENV;
-
 const baseConfig = {
 	mode,
 	entry: {
@@ -59,6 +58,7 @@ const baseConfig = {
 		]
 	},
 	plugins: [
+		new webpack.NormalModuleReplacementPlugin(/element-ui[\/\\]lib[\/\\]locale[\/\\]lang[\/\\]zh-CN/, 'element-ui/lib/locale/lang/en'),
 		new webpack.DefinePlugin({
 			"process.env": {
 				NODE_ENV: JSON.stringify(process.env.NODE_ENV)
@@ -74,14 +74,19 @@ const baseConfig = {
 		}])
 	],
 	optimization: {
-		minimize: mode === 'production' ? true : false
+		minimize: mode === "production"
+	},
+	devServer: {
+		contentBase: path.resolve(__dirname, '/dist')
 	}
 };
 let devConfig = baseConfig;
 if (process.env.NODE_ENV === "development") {
 	devConfig = merge(baseConfig, {
 		devtool: "source-map",
-		plugins: [new FriendlyErrorsPlugin()]
+		plugins: [
+			new FriendlyErrorsPlugin()
+		]
 	});
 }
 module.exports = devConfig;

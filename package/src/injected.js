@@ -34,18 +34,7 @@ export default function () {
 						type: type.component,
 						rawType: type.raw
 					};
-					cc.js.getset(
-						ret,
-						"value",
-						() => {
-							return valueOf(comp[name]);
-						},
-						str => {
-							comp[name] = fromString(type.rawType, str);
-						},
-						true,
-						true
-					);
+					ret.value = valueOf(comp[name]);
 					return ret;
 				});
 			result.push({
@@ -101,34 +90,34 @@ export default function () {
 	}
 	function typeOf(val) {
 		let raw = typeof val;
-		let c = "";
+		let component = "";
 		switch (raw) {
 			case "string":
-				c = "ElInput";
+				component = "ElInput";
 				break;
 			case "number":
-				c = "ElInputNumber";
+				component = "ElInputNumber";
 				break;
 			case "boolean":
-				c = "ElSwitch";
+				component = "ElSwitch";
 				break;
 		}
-		if (!c && val && val.constructor) {
+		if (!component && val && val.constructor) {
 			raw = val.constructor.name;
 			switch (raw) {
 				case "Color":
-					c = "ElColorPicker";
+					component = "ElColorPicker";
 					break;
 				case "Vec2":
 				case "Vec3":
 				case "Size":
-					c = "ElInput";
+					component = "ElInput";
 					break;
 			}
 		}
 		return {
 			raw,
-			component: c
+			component
 		};
 	}
 	function fromString(rawType, str) {
@@ -234,16 +223,18 @@ export default function () {
 			let ret = [];
 			this.nodeId = 1;
 			// 如果场景已经被加载序列化场景
-			if (scene) {
-				if (!scene.name) {
-					scene.name = 'Scene';
+			try {
+				if (scene) {
+					if (!scene.name) {
+						scene.name = 'Scene';
+					}
+					ret = this.serialize(scene, true);
 				}
-				ret = this.serialize(scene, true);
+			}
+			catch(err) {
+				console.error(err);
 			}
 			return ret;
-		},
-		compile() {
-			setTimeout(location.reload, 2000);
 		},
 		/**
 		 * Post message to content script and then forward message to cc-devtool

@@ -1,26 +1,69 @@
 <template>
 	<div class="main">
-		<ElHeader>
-			<img class="logo" src="../../icons/icon-128.png" />
-			<h1>
-				<a href="https://docs.cocos.com/creator/manual/zh/" target="_blank">Cocos Creator Devtool</a>
-			</h1>
-			<ElCheckbox v-model="isShowFps">FPS Panel</ElCheckbox>
-			<ElCheckbox v-model="isShowInspectLayer">Inspect Layer</ElCheckbox>
-			<ElButton
-				@click="refreshTree"
-				id="refresh-btn"
-				type="primary"
-				size="mini"
-				icon="el-icon-refresh"
-			>Refresh Tree</ElButton>
-			<ElButton @click="reloadScene" type="primary" icon="el-icon-refresh" size="mini">Reload Scene</ElButton>
-			<ElButton @click="compile" type="primary" icon="el-icon-setting" size="mini">Compile</ElButton>
-			<ElButton @click="reload" type="primary" icon="el-icon-refresh" size="mini">Reload Extension</ElButton>
+		<!-- 顶部 -->
+		<ElHeader class="header">
+			<div class="title">
+				<img class="logo" src="../../icons/icon-128.png" />
+				<a href="https://docs.cocos.com/creator/manual/zh/" target="_blank">Cocos Creator Inpsector</a>
+			</div>
+			<!-- 功能按钮等 -->
+			<div class="features">
+				<div class="switchs">
+					<div class="switch">
+						<ElSwitch v-model="isShowFps"></ElSwitch>
+						<ElTooltip effect="dark" content="Show FPS/显示FPS" placement="bottom">
+							<span>FPS</span>
+						</ElTooltip>
+					</div>
+					<div class="switch">
+						<ElSwitch v-model="isShowInspectLayer"></ElSwitch>
+						<ElTooltip effect="dark" content="Show Inspect Layer/显示调试层" placement="bottom">
+							<span>Inspect</span>
+						</ElTooltip>
+					</div>
+				</div>
+				<div class="buttons">
+					<!-- Refresh Tree -->
+					<div class="btn" @click="refreshTree">
+						<ElTooltip effect="dark" content="刷新节点树" placement="bottom">
+							<div>
+								<span>
+									<i class="el-icon-refresh"></i>
+								</span>
+								<span>Refresh Tree</span>
+							</div>
+						</ElTooltip>
+					</div>
+					<!-- Reload Scene -->
+					<div class="btn" @click="reloadScene">
+						<ElTooltip effect="dark" content="重新加载场景" placement="bottom">
+							<div>
+								<span >
+									<i class="el-icon-refresh-right"></i>
+								</span>
+								<span>Reload Scene</span>
+							</div>
+						</ElTooltip>
+					</div>
+					<!-- Reload Extension -->
+					<div class="btn" @click="reloadScene">
+						<ElTooltip effect="dark" content="重新加载插件" placement="bottom">
+							<div>
+								<span>
+									<i class="el-icon-files"></i>
+								</span>
+								<span>Reload Extension</span>
+							</div>
+							
+						</ElTooltip>
+					</div>
+				</div>
+			</div>
 		</ElHeader>
-		<ElContainer>
-			<ElAside>
-				<ElInput v-model="filterText" size="mini" clearable placeholder="Node name"></ElInput>
+		<ElContainer class="container">
+			<!-- 左边栏 -->
+			<ElAside class="left">
+				<ElInput v-model="filterText" size="mini" clearable placeholder="Node name" prefix-icon="el-icon-search"></ElInput>
 				<ElTree
 					ref="tree"
 					@node-click="onClickTreeNode"
@@ -31,17 +74,13 @@
 					:filter-node-method="filterNode"
 				></ElTree>
 			</ElAside>
-			<ElMain>
-				<div style="margin-bottom: 1em;">
-					<i style="font-size:24px;margin-right: 1em;vertical-align:middle;color:gray;"></i>
-					<ElButton @click="inspectNode" type="primary" icon="el-icon-view" size="mini">Inspect</ElButton>
-				</div>
-				<h2>Components</h2>
+			<ElMain class="main">
+				<ElButton @click="inspectNode" type="primary" icon="el-icon-view" size="mini" round>Print</ElButton>
+				<p>Components</p>
 				<div v-if="nodeComps">
 					<table
 						class="el-table comp-table"
 						v-for="comp in nodeComps"
-						style="width:500px;"
 						:key="comp.uuid"
 					>
 						<colgroup>
@@ -79,44 +118,172 @@
 						</tbody>
 					</table>
 				</div>
-				<h2>Properties</h2>
+				<p>Properties</p>
 				<ElTable :data="nodeProps" stripe>
 					<ElTableColumn prop="key" label="Property" :width="200"></ElTableColumn>
 					<ElTableColumn prop="key" label="Value" :width="300">
 						<template slot-scope="scope">
-							<span v-if="shouldDisplayText(scope.row)">{{scope.row.value}}</span>
-							<ElSwitch
-								v-else-if="shouldDisplayCheckbox(scope.row)"
-								size="mini"
-								v-model="scope.row.value"
-								@change="onPropChange(scope.row)"
-							></ElSwitch>
-							<ElSwitch
-								v-else-if="shouldDispalyInputNumber(scope.row)"
+							<!-- string -->
+							<span v-if="checkPropValueType(scope.row) === 1">{{scope.row.value}}</span>
+							<!-- number -->
+							<ElInputNumber>
+								v-else-if="checkPropValueType(scope.row) === 2"
 								size="mini"
 								:step="inputNumberStep"
 								v-model="scope.row.value"
 								@change="onPropChange(scope.row)"
+							></ElInputNumber>
+							<!-- color -->
+							<ElColorPicker>
+								v-else-if="checkPropValueType(scope.row) === 3"
+								size="mini"
+								v-model="scope.row.value"
+								@change="onPropChange(scope.row)"
+							></ElColorPicker>
+							<!-- active -->
+							<ElSwitch>
+								v-else-if="checkPropValueType(scope.row) === 4"
+								size="mini"
+								v-model="scope.row.value"
+								@change="onPropChange(scope.row)"
 							></ElSwitch>
-							<ElColorPicker
-								v-else-if="shouldDisplayColorPicker(scope.row)"
-								size="mini"
-								v-model="scope.row.value"
-								@change="onPropChange(scope.row)"
-							></ElColorPicker>
-							<ElColorPicker
-								v-else
-								v-model="scope.row.value"
-								size="mini"
-								@change="onPropChange(scope.row)"
-							></ElColorPicker>
 						</template>
 					</ElTableColumn>
 				</ElTable>
 			</ElMain>
+			<ElAside class="right">
+			</ElAside>
 		</ElContainer>
 	</div>
 </template>
+<style lang="scss">
+%column {
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+	align-items: center;
+	height: 70px;
+	padding: 10px;
+	box-sizing: border-box;
+	&:hover {
+		cursor: pointer;
+		background-color: #d9ecff;
+	}
+}
+.main {
+	height: 100%;
+	.header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		height: 70px !important;
+		padding: 0;
+		box-shadow: 0 0 8px rgba(0,0,0,0.15);
+		.title {
+			display: flex;
+			align-items: center;
+			height: 70px;
+			.logo {
+				width: 48px;
+				height: 48px;
+				margin-right: 1em;
+			}
+		}
+		.features {
+			display: flex;
+			padding: 10px 0 10px 10px;
+			.switchs {
+				display: flex;
+			}
+			.switch {
+				@extend %column;
+				span {
+					font-size: 14px;
+				}
+			}
+			.buttons {
+				display: flex;
+				justify-content: center;
+				align-items: center;
+				.btn {
+					.el-tooltip {
+						@extend %column;
+					}
+					> span {
+						font-size: 14px;
+					}
+				}
+				i[class^=el-icon-] {
+					font-size: 24px;
+				}
+			}
+		}
+	}
+	.container {
+		height: calc(100% - 70px);
+		.left, .right {
+			display: flex;
+			flex-direction: column;
+			padding: 10px 10px 0 10px;
+			.el-input {
+				flex-shrink: 0;
+			}
+			.el-tree {
+				flex-grow: 1;
+				overflow: scroll;
+			}
+		}
+		.left {
+			flex-grow: 0;
+			flex-shrink: 0;
+			border-right: 1px solid rgba(0,0,0,0.15);
+			box-sizing: border-box;
+		}
+		.right {
+			flex: 1;
+		}
+		.el-main {
+			width: 540px;
+			flex-grow: 0;
+			flex-shrink: 0;
+			border-right: 1px solid rgba(0,0,0,0.15);
+			box-sizing: border-box;
+			overflow: scroll;
+		}
+	}
+	.comp-table {
+		border-collapse: collapse;
+		.inspect-btn {
+			text-align: right;
+		}
+		th, td {
+			padding: 0.5em 1em !important;
+		}
+	}
+	.el-table {
+		margin-bottom: 1em;
+		&::before {
+			display: none;
+		}
+		td {
+			padding: 2px;
+		}
+		th {
+			background-color: #efefef;
+		}
+	}
+	.el-tree-node.is-current {
+		position: relative;
+		&::before {
+			content: "$n0";
+			position: absolute;
+			top: 0.5em;
+			right: 4px;
+			color: #b7b7b7;
+		}
+	}
+}
+</style>
 
 <script>
 import injectedScript from '../injected';
@@ -128,7 +295,6 @@ export default {
 		return {
 			isShowInspectLayer: false,
 			isShowFps: true,
-			isShowErudaBtn: true,
 			treeNode: [],
 			nodeProps: [],
 			nodeComps: [],
@@ -149,9 +315,6 @@ export default {
 		},
 		isShowFps(val) {
 			this.ccdevtool.toggleElement("#fps", val);
-		},
-		isShowErudaBtn(val) {
-			this.ccdevtool.toggleElement(".eruda-entry-btn", val);
 		}
 	},
 	methods: {
@@ -216,36 +379,35 @@ export default {
 		reload() {
 			location.reload();
 		},
-		shouldDisplayText(row) {
-			return ["uuid", "name"].indexOf(row.key) >= 0;
-		},
-		shouldDisplayCheckbox(row) {
-			return row.key === "active";
-		},
-		shouldDispalyInputNumber(row) {
-			return (
-				[
-					"x",
-					"y",
-					"width",
-					"height",
-					"zIndex",
-					"opacity",
-					"anchorX",
-					"anchorY",
-					"rotation",
-					"rotationX",
-					"rotationY",
-					"scale",
-					"scaleX",
-					"scaleY",
-					"skewX",
-					"skewY"
-				].indexOf(row.key) >= 0
-			);
-		},
-		shouldDisplayColorPicker(row) {
-			return row.key === "color";
+		checkPropValueType(row) {
+			let res = 0;
+			const key = row.key;
+			if (["uuid", "name"].indexOf(key) > 0) {
+				return 1;
+			} else if ([
+				"x",
+				"y",
+				"width",
+				"height",
+				"zIndex",
+				"opacity",
+				"anchorX",
+				"anchorY",
+				"rotation",
+				"rotationX",
+				"rotationY",
+				"scale",
+				"scaleX",
+				"scaleY",
+				"skewX",
+				"skewY"
+			].indexOf(key) !== -1) {
+				return 2;
+			} else if (key === 'color') {
+				return 3;
+			} else if (key === 'active') {
+				return 4;
+			}
 		},
 		loadTreeNodes() {
 			return this.ccdevtool.getTreeNodes()
@@ -256,9 +418,6 @@ export default {
 					this.nodeComps = treeNode.comps;
 				}
 			});
-		},
-		compile() {
-			this.ccdevtool.compile();
 		},
 		filterNode(value, data) {
 			if (!value) return true;
@@ -335,63 +494,3 @@ export default {
 	}
 };
 </script>
-
-<style lang="scss">
-.main {
-	input,
-	button {
-		border-radius: 2px;
-	}
-	h1 {
-		font-size: 14px;
-		display: inline;
-		margin: 0 1em 0 0;
-	}
-	.logo {
-		width: 24px;
-		height: 24px;
-		vertical-align: top;
-		margin-right: 1em;
-	}
-	a {
-		color: black;
-		text-decoration: none;
-	}
-	.comp-table {
-		border-collapse: collapse;
-		.inspect-btn {
-			text-align: right;
-		}
-		th,
-		td {
-			padding: 0.5em 1em !important;
-		}
-	}
-	.el-table {
-		margin-bottom: 1em;
-		&::before {
-			display: none;
-		}
-		td {
-			padding: 2px;
-		}
-		th {
-			background-color: #efefef;
-		}
-	}
-	.el-input-number--mini {
-		line-height: 22px;
-	}
-
-	.el-tree-node.is-current {
-		position: relative;
-		&::before {
-			content: "$n0";
-			position: absolute;
-			top: 0.5em;
-			right: 4px;
-			color: #b7b7b7;
-		}
-	}
-}
-</style>
