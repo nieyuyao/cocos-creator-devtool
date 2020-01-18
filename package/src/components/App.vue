@@ -10,9 +10,9 @@
 			<div class="features">
 				<div class="switchs">
 					<div class="switch">
-						<ElSwitch v-model="isShowFps"></ElSwitch>
-						<ElTooltip effect="dark" content="Show FPS/显示FPS" placement="bottom">
-							<span>FPS</span>
+						<ElSwitch v-model="isShowStats"></ElSwitch>
+						<ElTooltip effect="dark" content="Show Stats/显示游戏参数" placement="bottom">
+							<span>Stats</span>
 						</ElTooltip>
 					</div>
 					<div class="switch">
@@ -96,7 +96,8 @@
 										size="mini"
 										type="normal"
 										icon="el-icon-view"
-									>Inspect</ElButton>
+										round
+									>Print</ElButton>
 								</th>
 							</tr>
 						</thead>
@@ -124,9 +125,11 @@
 					<ElTableColumn prop="key" label="Value" :width="300">
 						<template slot-scope="scope">
 							<!-- string -->
-							<span v-if="checkPropValueType(scope.row) === 1">{{scope.row.value}}</span>
+							<span v-if="checkPropValueType(scope.row) === 1">
+								{{scope.row.value}}
+							</span>
 							<!-- number -->
-							<ElInputNumber>
+							<ElInputNumber
 								v-else-if="checkPropValueType(scope.row) === 2"
 								size="mini"
 								:step="inputNumberStep"
@@ -134,14 +137,14 @@
 								@change="onPropChange(scope.row)"
 							></ElInputNumber>
 							<!-- color -->
-							<ElColorPicker>
+							<ElColorPicker
 								v-else-if="checkPropValueType(scope.row) === 3"
 								size="mini"
 								v-model="scope.row.value"
 								@change="onPropChange(scope.row)"
 							></ElColorPicker>
 							<!-- active -->
-							<ElSwitch>
+							<ElSwitch
 								v-else-if="checkPropValueType(scope.row) === 4"
 								size="mini"
 								v-model="scope.row.value"
@@ -242,7 +245,7 @@
 		.right {
 			flex: 1;
 		}
-		.el-main {
+		.main {
 			width: 540px;
 			flex-grow: 0;
 			flex-shrink: 0;
@@ -250,6 +253,13 @@
 			box-sizing: border-box;
 			overflow: scroll;
 		}
+	}
+	.el-input-number > span[role="button"]:first-child{
+		margin: 1px 0 0 1px;
+	}
+	.el-color-picker__color-inner {
+		top: 1px;
+		left: 1px;
 	}
 	.comp-table {
 		border-collapse: collapse;
@@ -294,7 +304,7 @@ export default {
 	data() {
 		return {
 			isShowInspectLayer: false,
-			isShowFps: true,
+			isShowStats: true,
 			treeNode: [],
 			nodeProps: [],
 			nodeComps: [],
@@ -311,10 +321,10 @@ export default {
 			this.$refs.tree.filter(val);
 		},
 		isShowInspectLayer(val) {
-			this.ccdevtool.toggleElement("#cc-devtool-inspect-layer", val);
+			val ? this.ccdevtool.showInspectLayer() : this.ccdevtool.hideInspectLayer();
 		},
-		isShowFps(val) {
-			this.ccdevtool.toggleElement("#fps", val);
+		isShowStats(val) {
+			val ? this.ccdevtool.showStatsPanel() : this.ccdevtool.hideStatsPanel();
 		}
 	},
 	methods: {
@@ -379,10 +389,9 @@ export default {
 		reload() {
 			location.reload();
 		},
-		checkPropValueType(row) {
-			let res = 0;
-			const key = row.key;
-			if (["uuid", "name"].indexOf(key) > 0) {
+		checkPropValueType({ key = '' }) {
+			console.log(key);
+			if (['uuid', 'name'].indexOf(key) > -1) {
 				return 1;
 			} else if ([
 				"x",
@@ -408,6 +417,7 @@ export default {
 			} else if (key === 'active') {
 				return 4;
 			}
+			return 0;
 		},
 		loadTreeNodes() {
 			return this.ccdevtool.getTreeNodes()

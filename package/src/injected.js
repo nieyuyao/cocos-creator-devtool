@@ -2,19 +2,60 @@ export default function () {
 	if (!window.cc) {
 		return;
 	}
-	// 需要忽略掉的组件属性
-	const ignoredComponentProp = [
-		"_name",
-		"_objFlags",
-		"node",
-		"name",
-		"uuid",
-		"__scriptAsset",
-		"_enabled",
-		"enabled",
-		"enabledInHierarchy",
-		"_isOnLoadCalled"
-	];
+	/**
+	 * @description 控制游戏参数面板显示的类
+	 * @param {Number} average 每隔多长时间刷新一次统计面板
+	 * @param {Object} statsInfo 需要统计的信息
+	 */
+	function Stats(average, statsInfo){
+		this.statsInfo = statsInfo;
+		this.average = average;
+		this.time = performance.now();
+		const stats = document.createElement('div');
+		stats.id = StatsLayerId;
+		const pstats = document.createElement('div');
+		pstats.className = 'pstats';
+		const style = document.createElement('style');
+		style.textContent = StatsStyleText;
+		document.head.appendChild(style);
+		const pstatsCon = document.createElement('div');
+		pstatsCon.className = 'pstats-container';
+		pstats.appendChild(pstatsCon);
+		stats.appendChild(pstats);
+		document.body.appendChild(stats);
+		Object.keys(statsInfo).forEach((key, index) => {
+			const row = statsInfo[key];
+			const item = document.createElement("div");
+			item.className = "pstats-item";
+			const label = document.createElement("div");
+			label.className = "pstats-label";
+			const counter = document.createElement("span");
+			counter.className = "pstats-counter-id";
+			counter.textContent = row.desc;
+			const value = document.createElement("div");
+			value.className = "pstats-counter-value";
+			label.appendChild(counter);
+			label.appendChild(value);
+			item.appendChild(label);
+			pstatsCon.appendChild(item);
+			item.style.top = `${index * 12}px`;
+			row.valueNode = value;
+			value.innerText = row.value || 0;
+			this[key] = row;
+		});
+	}
+	Stats.prototype.tick = function() {
+		const now = performance.now();
+		if (now - this.time < this.average) {
+			return;
+		}
+		this.time = now;
+		const statsInfo = this.statsInfo;
+		Object.keys(statsInfo).forEach(key => {
+			const row = statsInfo[key];
+			row.valueNode.innerText = Math.round(row.value * 100) / 100;
+		});
+	}
 	/**
 	 * Get components data from given node
 	 * @param  {cc.Node} n
@@ -25,7 +66,7 @@ export default function () {
 		return comps.reduce((result, comp, i) => {
 			const props = comp.constructor.__props__
 				.filter(prop => {
-					return ignoredComponentProp.indexOf(prop) < 0 && prop[0] != "_";
+					return ignoredComponentProp.indexOf(prop) < 0 && prop[0] != '_';
 				})
 				.map(name => {
 					const type = typeOf(comp[name]);
@@ -41,7 +82,7 @@ export default function () {
 				key: comp.__classname__,
 				index: i,
 				uuid: node.uuid,
-				value: "<<inspect>>",
+				value: '<<inspect>>',
 				props
 			});
 			return result;
@@ -62,57 +103,45 @@ export default function () {
 			} :
 			null;
 	}
-	function rgba2color(str) {
-		const vec = str.replace(/ /g, "").replace(/^rgba?/, "");
-		const comps = str2array(vec);
-		return cc.color.apply(cc, comps);
-	}
 	function valueOf(val) {
 		const t = typeof val;
 		if (
-			t === "undefined" ||
-			t === "string" ||
-			t === "number" ||
-			t === "boolean"
+			t === 'undefined' ||
+			t === 'string' ||
+			t === 'number' ||
+			t === 'boolean'
 		) {
 			return val;
 		}
-		if (val === null) return "null";
+		if (val === null) return 'null';
 		switch (val.constructor.name) {
-			case "Color":
-			case "Size":
-			case "Vec2":
-			case "Vec3":
+			case 'Color':
+			case 'Size':
+			case 'Vec2':
+			case 'Vec3':
 				return val.toString();
 		}
 		if (val && val.constructor) return `<${val.constructor.name}>`;
-		return "<unknown>";
+		return '<unknown>';
 	}
 	function typeOf(val) {
 		let raw = typeof val;
-		let component = "";
+		let component = '';
 		switch (raw) {
-			case "string":
-				component = "ElInput";
+			case 'string':
+				component = 'ElInput';
 				break;
-			case "number":
-				component = "ElInputNumber";
+			case 'number':
+				component = 'ElInputNumber';
 				break;
-			case "boolean":
-				component = "ElSwitch";
+			case 'boolean':
+				component = 'ElSwitch';
 				break;
 		}
 		if (!component && val && val.constructor) {
 			raw = val.constructor.name;
-			switch (raw) {
-				case "Color":
-					component = "ElColorPicker";
-					break;
-				case "Vec2":
-				case "Vec3":
-				case "Size":
-					component = "ElInput";
-					break;
+			if (raw === 'Color') {
+				component = 'ElColorPicker';
 			}
 		}
 		return {
@@ -120,48 +149,19 @@ export default function () {
 			component
 		};
 	}
-	function fromString(rawType, str) {
-		switch (rawType) {
-			case "null":
-			case "undefined":
-			case "string":
-				return str;
-			case "number":
-				return str.indexOf(".") >= 0 ? parseFloat(str) : parseInt(str, 10);
-			case "boolean":
-				return str === "true";
-			case "Vec2":
-			case "Vec3":
-				return str2vec(str);
-			case "Size":
-				return str2size(str);
-			case "Color":
-				return str2color(str);
-			default:
-				return str;
-		}
-	}
-	function str2array(str) {
-		return str
-			.replace(/[()]/, "")
-			.split(",")
-			.map(n => parseInt(n.trim(), 10));
-	}
-	function str2size(str) {
-		const vec = str2array(str);
-		return cc.size.apply(cc, vec);
-	}
-	function str2vec(str) {
-		const vec = str2array(str);
-		return vec.length === 3 ? cc.v3.apply(cc, vec) : cc.v2.apply(cc, vec);
-	}
-	function str2color(str) {
-		let c = hexToRgb(str);
-		if (!c) {
-			return cc.color(c.r, c.g, c.b, 255);
-		}
-		return rgba2color(str);
-	}
+	// 需要忽略掉的组件属性
+	const ignoredComponentProp = [
+		"_name",
+		"_objFlags",
+		"node",
+		"name",
+		"uuid",
+		"__scriptAsset",
+		"_enabled",
+		"enabled",
+		"enabledInHierarchy",
+		"_isOnLoadCalled"
+	];
 	const SerializeProps = {
 		default: [
 			//identity
@@ -208,12 +208,87 @@ export default function () {
 			// 'skewX', 'skewY'
 		]
 	};
+	const StatsStyleText = `
+	.pstats {
+		position: fixed;
+		padding: 0px;
+		width: 150px;
+		height: 72px;
+		right: 0px;
+		bottom: 0px;
+		font-size: 10px;
+		font-family: 'Roboto Condensed', tahoma, sans-serif;
+		overflow: hidden;
+		user-select: none;
+		cursor: default;
+		background: #222;
+		border-radius: 3px;
+		z-index: 9999;
+	}
+	.pstats-container {
+		display: block;
+		position: relative;
+		color: #888;
+		white-space: nowrap;
+	}
+	.pstats-item {
+		position: absolute;
+		width: 250px;
+		height: 12px;
+		left: 0px;
+	}
+	.pstats-label {
+		position: absolute;
+		width: 150px;
+		height: 12px;
+		text-align: left;
+		transition: background 0.3s;
+	}
+	.pstats-label.alarm {
+		color: #ccc;
+		background: #800;
+	
+		transition: background 0s;
+	}
+	.pstats-counter-id {
+		position: absolute;
+		width: 90px;
+		left: 0px;
+	}
+	.pstats-counter-value {
+		position: absolute;
+		width: 60px;
+		left: 90px;
+		text-align: right;
+	}
+	.pstats-canvas {
+		display: block;
+		position: absolute;
+		right: 0px;
+		top: 1px;
+	}
+	.pstats-fraction {
+		position: absolute;
+		width: 250px;
+		left: 0px;
+	}
+	.pstats-legend {
+		position: absolute;
+		width: 150px;
+		text-align: right;
+	}
+	.pstats-legend > span {
+		position: absolute;
+		right: 0px;
+	}
+	`;
 	const NodesCache = {}; // Node cache which contains cc.Node refs
 	const NodesCacheData = {}; // Node data cache
-	const InspectLayerId = "cc-devtool-inspect-layer";
+	const InspectLayerId = 'cc-devtool-inspect-layer';
+	const StatsLayerId = 'fps';
 	const ccdevtool = (window.ccdevtool = {
 		nodeId: 1,
-		NodesCacheData,
+		stats: null,
 		/**
 		 * Load tree node data
 		 * @return {Object} node data in JSON
@@ -259,8 +334,9 @@ export default function () {
 		 */
 		toggleElement(selector, val) {
 			var ele = document.querySelector(selector);
-			if (!ele) return false;
-			ele.style.display = val ? "" : "none";
+			if (ele) {
+				ele.style.display = val ? "" : "none";
+			}
 		},
 		/**
 		 * Show/hide given node
@@ -272,20 +348,23 @@ export default function () {
 			if (node) node.active = !!value;
 		},
 		/**
-		 * Hide inspect layer
+		 * @description Hide inspect layer
 		 */
 		hideInspectLayer() {
 			this.toggleElement(`#${InspectLayerId}`, false);
 		},
+		/**
+		 * @description Show inspect layer
+		 */
 		showInspectLayer() {
-			var inspectLayer = document.getElementById(InspectLayerId);
+			const inspectLayer = document.getElementById(InspectLayerId);
 			if (!inspectLayer) {
 				this.createInspectLayer();
 			}
 			this.toggleElement(`#${InspectLayerId}`, true);
 		},
 		/**
-		 * Create inspect layer
+		 * @description Create inspect layer
 		 */
 		createInspectLayer() {
 			const inspectLayer = document.createElement("canvas");
@@ -311,6 +390,78 @@ export default function () {
 			`;
 			inspectLayer.id = InspectLayerId;
 			document.body.appendChild(inspectLayer);
+		},
+		/**
+		 * @description Hide stats panel
+		 */
+		hideStatsPanel() {
+			this.toggleElement(`#${StatsLayerId}`, false);
+			cc.director.off(cc.Director.EVENT_BEFORE_UPDATE, this.afterDraw, this);
+			cc.director.off(cc.Director.EVENT_AFTER_VISIT, this.afterDraw, this);
+			cc.director.off(cc.Director.EVENT_AFTER_DRAW, this.afterDraw, this);
+		},
+		/**
+		 * @description Show stats panel
+		 */
+		showStatsPanel() {
+			const statsPanel = document.getElementById(StatsLayerId);
+			if (!statsPanel) {
+				this.createStatsPanel();
+			}
+			this.toggleElement(`#${StatsLayerId}`, true);
+			cc.director.on(cc.Director.EVENT_BEFORE_UPDATE, this.beforeUpdate, this);
+            cc.director.on(cc.Director.EVENT_AFTER_VISIT, this.afterVisit, this);
+            cc.director.on(cc.Director.EVENT_AFTER_DRAW, this.afterDraw, this);
+		},
+		/**
+		 * @description Create stats panel
+		 */
+		createStatsPanel() {
+			// fps = 1s / (frame + 两个frame之间的时间间隔)
+			const statsInfo = {
+				frame: { desc: 'Frame time (ms)', value: 0, before: 0, after: 0 }, // 每帧耗时
+				fps: { desc: 'Framerate (FPS)', below: 30, value: 0 }, // 帧率
+				draws: { desc: 'Draw call', value: 0 }, // drawCall次数
+				logic: { desc: 'Game Logic (ms)', value: 0, before: 0, after: 0 }, // logic js耗时
+				render: { desc: 'Renderer (ms)', value: 0, before: 0, after: 0 }, // 渲染耗时
+				mode: { desc: cc._renderType === cc.game.RENDER_TYPE_WEBGL ? 'WebGL' : 'Canvas', min: 1, value: cc._renderType === cc.game.RENDER_TYPE_WEBGL ? 0 : 1 } // 渲染模式
+			}
+			this.stats = new Stats(500, statsInfo);
+		},
+		/**
+		 * @description 用作计算游戏实时性能参数的一些函数
+		 * @function beforeUpdate 场景更新之前的回调函数
+		 * @function afterVisit 场景更新完毕
+		 * @function afterDraw 场景被绘制到屏幕上
+		 */
+		beforeUpdate() {
+			const now = performance.now();
+			const { logic, frame } = this.stats;
+			logic.before = now;
+			frame.before = now;
+		},
+		afterVisit() {
+			const { logic, render } = this.stats;
+			const now = performance.now();
+			logic.after = now;
+			render.before = now;
+		},
+		afterDraw() {
+			const now = performance.now();
+			const { logic, draws, render, frame, fps } = this.stats;
+			render.after = now;
+			frame.after = now;
+			logic.value = logic.after - logic.before;
+			render.value = render.after - render.before;
+			draws.value = cc.g_NumberOfDraws;
+			frame.value = frame.after - frame.before;
+			if (fps.before === 0) {
+				fps.value = 0;
+			} else {
+				fps.value = 1000 / (now - fps.before);
+			}
+			fps.before = now;
+			this.stats.tick();
 		},
 		/**
 		 * Set helper variable $n0, $n1
