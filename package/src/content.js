@@ -16,5 +16,9 @@ window.addEventListener('message', (event) => {
     }
     if (event.source === window && hasCocosGameCanvas) {
         chrome.runtime.sendMessage(event.data);
+    } else {
+        window.postMessage({
+            name: event.name
+        });
     }
 })

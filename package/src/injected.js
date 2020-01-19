@@ -82,7 +82,7 @@ export default function () {
 				key: comp.__classname__,
 				index: i,
 				uuid: node.uuid,
-				value: '<<inspect>>',
+				value: '<<Inspect>>',
 				props
 			});
 			return result;
@@ -577,19 +577,19 @@ export default function () {
 	 * when loadScene is called, notify cc-devtool panel to refresh node tree
 	 */
 	if (cc.director) {
-		cc.director.on(cc.director.EVENT_AFTER_SCENE_LAUNCH, () => {
-			this.postMessage("cc-devtool: lauch-scene");
+		cc.director.on(cc.Director.EVENT_AFTER_SCENE_LAUNCH, () => {
+			this.postMessage('cc-devtool: lauch-scene');
 		});
 	}
 	if (cc && cc.game) {
-		if (!cc.game.hasEventListener("game_on_show")) {
-			cc.game.on("game_on_show", function () {
-				ccdevtool.postMessage("cc-devtool: game-show");
+		if (!cc.game.hasEventListener('game_on_show')) {
+			cc.game.on('game_on_show', function () {
+				ccdevtool.postMessage('cc-devtool: game-show');
 			});
 		}
-		if (!cc.game.hasEventListener("game_on_hide")) {
-			cc.game.on("game_on_hide", function () {
-				ccdevtool.postMessage("cc-devtool: game-hide");
+		if (!cc.game.hasEventListener('game_on_hide')) {
+			cc.game.on('game_on_hide', function () {
+				ccdevtool.postMessage('cc-devtool: game-hide');
 			});
 		}
 	}
@@ -603,4 +603,8 @@ export default function () {
 		"background:transparent"
 	);
 	ccdevtool.postMessage("cc-devtool: cc-found");
+	window.addEventListener('message', (event) => {
+		console.log(event);
+	});
+	ccdevtool.on
 }

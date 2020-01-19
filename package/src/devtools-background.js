@@ -27,7 +27,7 @@ function createCocosCreatorDevtoolPanel() {
 }
 
 chrome.devtools.inspectedWindow.eval(
-	"!!window.cc && !!window.cc.game",
+	'!!window.cc && !!window.cc.game',
 	hasCC => {
 		if (hasCC) createCocosCreatorDevtoolPanel();
 	}

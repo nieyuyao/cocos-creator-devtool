@@ -322,7 +322,8 @@ export default {
 			inputNumberStep: 1,
 			showLoading: false, // 显示loading
 			timer: 0,
-			bound: {}
+			bound: {},
+			ccDevtoolId: 0 // ccdevtool id
 		};
 	},
 	mounted() {
@@ -352,16 +353,17 @@ export default {
 				if (!message) return;
 				log(message);
 				switch (message.name) {
-					case "cc-devtool: panel-shown":
+					case 'cc-devtool: panel-shown':
 						this.onPanelShown();
+						this.postMessage('cc-devtool: check-ccid');
 						break;
-					case "cc-devtool: panel-hidden":
+					case 'cc-devtool: panel-hidden':
 						this.onPanelHidden();
 						break;
-					case "cc-devtool: window-loaded":
+					case 'cc-devtool: window-loaded':
 						location.reload();
 						break;
-					case "cc-devtool: game-show":
+					case 'cc-devtool: game-show':
 					case 'cc-devtool: lauch-scene':
 						this.injectPromise
 							.then(() => {
@@ -460,7 +462,6 @@ export default {
 			this.selectedNode = node;
 			this.nodeProps = node.props;
 			this.nodeComps = node.comps;
-			console.error('开始选择',node.uuid );
 			this.ccdevtool.selectNode(node.uuid);
 			this.bound = node.bound;
 		},
@@ -497,12 +498,16 @@ export default {
 							return;
 						}
 						vm.ccdevtool = {};
+						vm.ccDevtoolId++;
+						vm.ccdevtool.id = vm.ccDevtoolId;
 						for (let name in ccdevtool) {
 							vm.ccdevtool[name] = function(...args) {
 								args = JSON.stringify(args).slice(1, -1);
 								return vm.eval(`ccdevtool.${name}(${args})`);
 							};
 						}
+						// 向window.cc注入id属性
+						vm.eval(`window.cc.ccId=${vm.ccDevtoolId}`);
 					});
 			};
 			return new Promise((resolve, reject) => {
