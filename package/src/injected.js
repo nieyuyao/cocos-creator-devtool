@@ -468,6 +468,7 @@ export default function () {
 		 * @param  {String} uuid, uuid of node
 		 */
 		selectNode(uuid) {
+			console.error(uuid);
 			window.$n1 = window.$n0;
 			window.$n0 = NodesCache[uuid];
 		},
@@ -549,10 +550,10 @@ export default function () {
 				//
 				bound.localBound.width = localBound.width;
 				bound.localBound.height = localBound.height;
-				bound.localBound.top = (1 - pAnchorY) * pH - (localBound.xMin + localBound.height);
+				bound.localBound.top = (1 - pAnchorY) * pH - (localBound.yMin + localBound.height);
 				bound.localBound.bottom = localBound.yMin + pAnchorY * pH;
 				bound.localBound.left = localBound.xMin + pAnchorX * pW;
-				bound.localBound.right = (1 - pAnchorX) * pW - (localBound.yMin + localBound.width);
+				bound.localBound.right = (1 - pAnchorX) * pW - (localBound.xMin + localBound.width);
 			}
 			/**
 			 * Cache node in some place other than NodesCacheData

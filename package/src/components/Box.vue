@@ -3,13 +3,22 @@
         <!-- 全局坐标 -->
         <div class="global">
             <h3 class="title">Global</h3>
-            <div class="bounding">
+            <div 
+                class="bounding"
+                :class="{'bounding-hover': boundingHover, 'content-hover': wrapperHover}"
+                @mouseover="handleGlobalBoundingMouseEnter"
+                @mouseout="handleGlobalBoundingMouseLeave"
+            >
                 <!-- 坐标轴 -->
                 <div class="axis-x"></div>
                 <div class="axis-y"></div>
                 <!-- 位置 -->
                 <div class="wrapper">
-                    <div class="content">
+                    <div
+                        class="content"
+                        @mouseover.stop="handleGlobalContentMouseEnter"
+                        @mouseout.stop="handleGlobalContentMouseLeave"
+                    >
                         <span>{{contentWidth}}×{{contentHeight}}</span>
                         <div class="place">
                             <div class="place-x">{{globalX}}</div>
@@ -19,15 +28,25 @@
                 </div>
             </div>
         </div>
+        <div class="divide"></div>
         <!-- 局部坐标 -->
         <div class="local">
             <h3 class="title">Local</h3>
-            <div class="parent">
+            <div
+                class="parent"
+                :class="{'parent-hover': parentHover, 'child-hover': childHover}"
+                @mouseover="handleLocalParentMouseEnter"
+                @mouseout="handleLocalParentMouseLeave"
+            >
                 <div class="place-top">{{localTop}}</div>
                 <div class="place-bottom">{{localBottom}}</div>
                 <div class="place-left">{{localLeft}}</div>
                 <div class="place-right">{{localRight}}</div>
-                <div class="child">
+                <div
+                    class="child"
+                    @mouseover.stop="handleLocalChildMouseEnter"
+                    @mouseout.stop="handleLocalChildMouseLeave"
+                >
                     <span>{{contentWidth}}×{{contentHeight}}</span>
                 </div>
             </div>
@@ -41,19 +60,30 @@
 .global {
     .bounding {
         position: relative;
-        width: 220px;
-        height: 140px;
+        width: 200px;
+        height: 200px;
         margin: 40px 0 40px 40px;
         border: 1px dashed black;
-        &:hover {
-            background-color:#f3cea5;
+        background-color:#f3cea5;
+        &.bounding-hover {
+            .content {
+                background-color: #fff;
+            }
+        }
+        &.content-hover {
+            background-color:#fff;
+            .wrapper {
+                .place {
+                    display: block;
+                }
+            }
         }
     }
     .axis-x {
         position: absolute;
         top: 50%;
         left: 50%;
-        width: 260px;
+        width: 240px;
         height: 0px;
         border-top: 1px dotted black;
         transform: translate(-50%, -50%);
@@ -71,7 +101,7 @@
         top: 50%;
         left: 50%;
         width: 0px;
-        height: 180px;
+        height: 240px;
         border-left: 1px dotted black;
         transform: translate(-50%, -50%);
         &::after {
@@ -96,21 +126,15 @@
             padding: 2px 8px;
             border: 1px solid black;
             font-size: 10px;
-            background-color: #fff;
             transform: translate(-50%, -50%);
-            &:hover {
-                background-color: #a8c5e5;
-                .place {
-                    display: block;
-                }
-            }
+            background-color: #a8c5e5;
             .place {
                 display: none;
                 position: absolute;
                 top: 50%;
                 left: 50%;
-                width: 65px;
-                height: 50px;
+                width: 55px;
+                height: 80px;
                 border-top: 1px solid red;
                 border-left: 1px solid red;
                 color: red;
@@ -130,18 +154,28 @@
         }
     }
 }
+.divide {
+    height: 1px;
+    background-color: #909399;
+}
 .local {
     .parent {
         position: relative;
         display: flex;
         justify-content: center;
         align-items: center;
-        width: 220px;
-        height: 140px;
+        width: 200px;
+        height: 200px;
         margin: 40px 0 40px 40px;
         border: 1px dashed black;
-        &:hover {
-            background-color:#f3cea5;
+        background-color:#f3cea5;
+        &.parent-hover {
+            .child {
+                background-color: #fff;
+            }
+        }
+        &.child-hover {
+            background-color: #fff;
         }
     }
     .child {
@@ -150,16 +184,9 @@
         align-items: center;
         width: 120px;
         height: 60px;
-        background-color: #fff;
         border: 1px solid black;
         font-size: 10px;
-        &:hover {
-            background-color: #a8c5e5;
-            .place {
-                display: block;
-            }
-        }
-        
+        background-color: #a8c5e5;        
     }
     [class*="place-"] {
         position: absolute;
@@ -191,6 +218,14 @@ export default {
            type: Object,
            required: true,
            default: {}
+        }
+    },
+    data() {
+        return {
+            wrapperHover: false,
+            boundingHover: false,
+            parentHover: false,
+            childHover: false
         }
     },
     computed: {
@@ -255,6 +290,32 @@ export default {
                 return localBound.height;
             }
             return '-';
+        }
+    },
+    methods: {
+        handleGlobalBoundingMouseEnter(event) {
+            this.boundingHover = true;
+        },
+        handleGlobalBoundingMouseLeave() {
+            this.boundingHover = false;
+        },
+        handleGlobalContentMouseEnter() {
+            this.wrapperHover = true;
+        },
+        handleGlobalContentMouseLeave() {
+            this.wrapperHover = false;
+        },
+        handleLocalParentMouseEnter() {
+            this.parentHover = true;
+        },
+        handleLocalParentMouseLeave() {
+            this.parentHover = false;
+        },
+        handleLocalChildMouseEnter() {
+            this.childHover = true;
+        },
+        handleLocalChildMouseLeave() {
+            this.childHover = false;
         }
     }
 }

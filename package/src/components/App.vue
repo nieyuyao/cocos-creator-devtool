@@ -321,7 +321,8 @@ export default {
 			filterText: "",
 			inputNumberStep: 1,
 			showLoading: false, // 显示loading
-			timer: 0
+			timer: 0,
+			bound: {}
 		};
 	},
 	mounted() {
@@ -459,6 +460,7 @@ export default {
 			this.selectedNode = node;
 			this.nodeProps = node.props;
 			this.nodeComps = node.comps;
+			console.error('开始选择',node.uuid );
 			this.ccdevtool.selectNode(node.uuid);
 			this.bound = node.bound;
 		},
