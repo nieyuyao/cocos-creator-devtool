@@ -23,35 +23,20 @@
 					</div>
 				</div>
 				<div class="buttons">
-					<!-- Refresh Tree -->
-					<div class="btn" @click="refreshTree">
-						<ElTooltip effect="dark" content="刷新节点树" placement="bottom">
-							<div>
-								<span>
-									<i class="el-icon-refresh"></i>
-								</span>
-								<span>Refresh Tree</span>
-							</div>
-						</ElTooltip>
-					</div>
 					<!-- Reload Scene -->
-					<div class="btn" @click="reloadScene">
+					<div class="btn" @click="refreshTree">
 						<ElTooltip effect="dark" content="重新加载场景" placement="bottom">
 							<div>
-								<span >
-									<i class="el-icon-refresh-right"></i>
-								</span>
+								<ElButton type="primary" icon="el-icon-refresh-right" size="small" circle></ElButton>
 								<span>Reload Scene</span>
 							</div>
 						</ElTooltip>
 					</div>
 					<!-- Reload Extension -->
-					<div class="btn" @click="reloadScene">
+					<div class="btn" @click="reload">
 						<ElTooltip effect="dark" content="重新加载插件" placement="bottom">
 							<div>
-								<span>
-									<i class="el-icon-files"></i>
-								</span>
+								<ElButton type="primary" icon="el-icon-files" size="small" circle></ElButton>
 								<span>Reload Extension</span>
 							</div>
 							
@@ -64,7 +49,13 @@
 			<!-- 左边栏 -->
 			<ElAside class="left">
 				<ElInput v-model="filterText" size="mini" clearable placeholder="Node name" prefix-icon="el-icon-search"></ElInput>
+				<div class="loading" v-if="showLoading">
+					<span>
+						<i class="el-icon-loading"></i>
+					</span>
+				</div>
 				<ElTree
+					v-else
 					ref="tree"
 					@node-click="onClickTreeNode"
 					:data="treeNode"
@@ -73,10 +64,11 @@
 					:expand-on-click-node="false"
 					:filter-node-method="filterNode"
 				></ElTree>
+				
 			</ElAside>
 			<ElMain class="main">
 				<ElButton @click="inspectNode" type="primary" icon="el-icon-view" size="mini" round>Print</ElButton>
-				<p>Components</p>
+				<h3 class="title">Components</h3>
 				<div v-if="nodeComps">
 					<table
 						class="el-table comp-table"
@@ -119,7 +111,7 @@
 						</tbody>
 					</table>
 				</div>
-				<p>Properties</p>
+				<h3 class="title">Properties</h3>
 				<ElTable :data="nodeProps" stripe>
 					<ElTableColumn prop="key" label="Property" :width="200"></ElTableColumn>
 					<ElTableColumn prop="key" label="Value" :width="300">
@@ -155,6 +147,7 @@
 				</ElTable>
 			</ElMain>
 			<ElAside class="right">
+				<Box :bound="bound"></Box>
 			</ElAside>
 		</ElContainer>
 	</div>
@@ -175,6 +168,9 @@
 }
 .main {
 	height: 100%;
+	.title {
+		color: #409EFF;
+	}
 	.header {
 		display: flex;
 		justify-content: space-between;
@@ -212,12 +208,15 @@
 					.el-tooltip {
 						@extend %column;
 					}
-					> span {
+					span {
 						font-size: 14px;
 					}
 				}
 				i[class^=el-icon-] {
-					font-size: 24px;
+					font-size: 14px;
+				}
+				.el-button--small.is-circle {
+					padding: 6px;
 				}
 			}
 		}
@@ -237,10 +236,17 @@
 			}
 		}
 		.left {
+			position: relative;
 			flex-grow: 0;
 			flex-shrink: 0;
 			border-right: 1px solid rgba(0,0,0,0.15);
 			box-sizing: border-box;
+			.loading {
+				font-size: 36px;
+				position: absolute;
+				top: 200px;
+				left: 138px;
+			}
 		}
 		.right {
 			flex: 1;
@@ -296,11 +302,15 @@
 </style>
 
 <script>
+import Box from './Box.vue';
 import injectedScript from '../injected';
 import { log } from '../utils';
 export default {
 	name: "App",
 	mixins: [],
+	components: {
+		Box
+	},
 	data() {
 		return {
 			isShowInspectLayer: false,
@@ -309,7 +319,9 @@ export default {
 			nodeProps: [],
 			nodeComps: [],
 			filterText: "",
-			inputNumberStep: 1
+			inputNumberStep: 1,
+			showLoading: false, // 显示loading
+			timer: 0
 		};
 	},
 	mounted() {
@@ -390,7 +402,6 @@ export default {
 			location.reload();
 		},
 		checkPropValueType({ key = '' }) {
-			console.log(key);
 			if (['uuid', 'name'].indexOf(key) > -1) {
 				return 1;
 			} else if ([
@@ -419,7 +430,9 @@ export default {
 			}
 			return 0;
 		},
+		// 加载节点
 		loadTreeNodes() {
+			this.showLoading = true;
 			return this.ccdevtool.getTreeNodes()
 			.then(treeNode => {
 				if (treeNode) {
@@ -427,34 +440,46 @@ export default {
 					this.nodeProps = treeNode.props;
 					this.nodeComps = treeNode.comps;
 				}
+				this.showLoading = false;
+				// 5s后认为超时
+				clearTimeout(this.timer);
 			});
+			clearTimeout(this.timer);
+			this.timer = setTimeout(() => {
+				this.showLoading = false;
+			}, 5000);
 		},
+		// 过滤节点
 		filterNode(value, data) {
 			if (!value) return true;
 			return data.label.toLowerCase().indexOf(value) >= 0;
 		},
+		// 点击节点
 		onClickTreeNode(node) {
 			this.selectedNode = node;
 			this.nodeProps = node.props;
 			this.nodeComps = node.comps;
 			this.ccdevtool.selectNode(node.uuid);
+			this.bound = node.bound;
 		},
+		// 监听节点属性变化
 		onPropChange(row) {
 			if (!this.selectedNode) return;
 			this.ccdevtool.updateNode(this.selectedNode.uuid, row.key, row.value);
 		},
+		// 刷新节点树
 		refreshTree() {
 			this.loadTreeNodes();
 		},
+		// 调试节点
 		inspectNode() {
 			if (this.selectedNode) this.ccdevtool.inspectNode(this.selectedNode.uuid);
 		},
-		reloadScene() {
-			this.ccdevtool.reloadScene();
-		},
+		// 调试组件
 		inspectComponent(row) {
 			this.ccdevtool.inspectComponent(row.uuid, row.index);
 		},
+		// 注入脚本
 		injectScript() {
 			// inject ccdevtool
 			const fn = injectedScript.toString();

@@ -506,12 +506,6 @@ export default function () {
 		inspectNode(uuid) {
 			console.trace((window.$n = NodesCache[uuid]));
 		},
-		reloadScene() {
-			try {
-				const s = cc.director.getScene();
-				cc.director.loadScene(s.name);
-			} catch (e) {}
-		},
 		/**
 		 * @description 序列化节点树
 		 * @param {cc.Scene|cc.Node} node 节点
@@ -539,13 +533,26 @@ export default function () {
 				return result;
 			}, []);
 			// AABB包围盒
-			let box = null;
+			let bound = {};
+			bound.localBound = {};
+			bound.globalBound = {};
 			if (node.parent) {
-				box = node.getBoundingBoxToWorld();
-				box.left = box.x / 2;
-				box.bottom = box.y / 2;
-				box.width = node.width / 2;
-				box.height = node.height / 2;
+				const globalBound = node.getBoundingBoxToWorld();
+				const localBound = node.getBoundingBox();
+				//
+				const { anchorX, anchorY } = node;
+				bound.globalBound.x = globalBound.xMin * (1 - anchorX) + globalBound.xMax * anchorX;
+				bound.globalBound.y = globalBound.yMin *  (1 - anchorY) + globalBound.yMax * anchorY;
+				bound.globalBound.width = node.width,
+				bound.globalBound.height = node.height;
+				const { anchorX: pAnchorX, anchorY: pAnchorY, width: pW, height: pH } = node.parent;
+				//
+				bound.localBound.width = localBound.width;
+				bound.localBound.height = localBound.height;
+				bound.localBound.top = (1 - pAnchorY) * pH - (localBound.xMin + localBound.height);
+				bound.localBound.bottom = localBound.yMin + pAnchorY * pH;
+				bound.localBound.left = localBound.xMin + pAnchorX * pW;
+				bound.localBound.right = (1 - pAnchorX) * pW - (localBound.yMin + localBound.width);
 			}
 			/**
 			 * Cache node in some place other than NodesCacheData
@@ -558,7 +565,7 @@ export default function () {
 				label: node.name,
 				props: kv,
 				comps: getComponentsData(node),
-				box,
+				bound,
 				children: node.children.map(it => ccdevtool.serialize(it))
 			});
 			return ret;
