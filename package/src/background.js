@@ -6,14 +6,13 @@
 
 
 import {
-	log,
 	warn
 } from './utils.js'
 
 const ports = {};
 
-// 监听来自dev-tool的创建连接事件
-chrome.runtime.onConnect.addListener(function (port) {
+// 监听来自devtool的创建连接事件
+chrome.runtime.onConnect.addListener(port => {
 	/**
 	 * @description 监听来自devtool的消息
 	 * @param {Object} message 消息内容
@@ -21,15 +20,16 @@ chrome.runtime.onConnect.addListener(function (port) {
 	 * @param {String} message.name 消息名字
 	 */
 	function onMessage(message = {}) {
-		const { name, tabId } = message;
-		if (name === 'cc-devtool: panel-created') {
+		const { name, tabId, source } = message;
+		if (source === 'devtool') {
 			ports[tabId] = port;
-		} else {
-			warn('cc-devtool: Unknown message ', message.name);
+			if (name === 'cc-devtool: check-ccid') {
+				chrome.runtime.sendMessage(message);
+			}
 		}
 	}
 	port.onMessage.addListener(onMessage);
-	port.onDisconnect.addListener(function (port) {
+	port.onDisconnect.addListener(port => {
 		port.onMessage.removeListener(onMessage);
 		const tabIds = Object.keys(ports);
 		for (let i = 0; i < tabIds.length; i++) {
@@ -43,7 +43,7 @@ chrome.runtime.onConnect.addListener(function (port) {
 });
 
 // 监听来自content-script的事件
-chrome.runtime.onMessage.addListener(function (message, sender) {
+chrome.runtime.onMessage.addListener((message, sender) => {
 	if (sender.tab) {
 		const tabId = sender.tab.id;
 		let not = 'not-';
@@ -62,9 +62,8 @@ chrome.runtime.onMessage.addListener(function (message, sender) {
 });
 
 // 被调试的页面加载完毕
-chrome.webNavigation.onCompleted.addListener(function (data) {
+chrome.webNavigation.onCompleted.addListener(data => {
 	const { tabId } = data;
-	console.log('调试的页面已经加载完', tabId);
 	if (ports[tabId]) {
 		if (data.frameId === 0) {
 			ports[tabId].postMessage({

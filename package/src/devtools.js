@@ -15,6 +15,7 @@ import ElColorPicker from 'element-ui/lib/color-picker';
 import 'element-ui/lib/theme-chalk/index.css';
 import './assets/reset.css';
 import locale from 'element-ui/lib/locale/lang/en';
+import AppConnecting from './components/AppConnecting.vue';
 import App from "./components/App.vue";
 
 Vue.use(ElHeader, { locale });
@@ -31,9 +32,20 @@ Vue.use(ElTableColumn, { locale });
 Vue.use(ElInputNumber, { locale });
 Vue.use(ElColorPicker, { locale });
 
-new Vue({
-    el: '#app',
-    render: (h) => h(App)
+const app = new Vue({
+    render: (h) => h(AppConnecting)
+}).$mount('#app');
+
+function initApp() {
+    new Vue({
+        extends: App
+    }).$mount('#app');
+}
+initApp();
+
+chrome.devtools.network.onNavigated.addListener(() => {
+    app.$destroy();
+    initApp();
 });
 
 

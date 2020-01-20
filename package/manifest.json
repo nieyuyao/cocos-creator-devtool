@@ -35,6 +35,11 @@
         "background.bundle.js"
       ],
       "persistent": true
-    }
+    },
+    "web_accessible_resources": [
+      "devtools.html",
+      "devtools-background.html",
+      "injected.bundle.js"
+    ]
   }
   

@@ -1,25 +1,158 @@
-export default function () {
-	if (!window.cc) {
-		return;
-	}
-	/**
-	 * @description 控制游戏参数面板显示的类
-	 * @param {Number} average 每隔多长时间刷新一次统计面板
-	 * @param {Object} statsInfo 需要统计的信息
-	 */
-	function Stats(average, statsInfo){
+const ignoredComponentProp = [
+	"_name",
+	"_objFlags",
+	"node",
+	"name",
+	"uuid",
+	"__scriptAsset",
+	"_enabled",
+	"enabled",
+	"enabledInHierarchy",
+	"_isOnLoadCalled"
+];
+const SerializeProps = {
+	default: [
+		//identity
+		"name",
+		"active",
+		"uuid",
+		//position, dimesion
+		"x",
+		"y",
+		"width",
+		"height",
+		"zIndex",
+		//prepresentation
+		"color",
+		"opacity",
+		//transformation
+		"anchorX",
+		"anchorY",
+		"rotation",
+		"scaleX",
+		"scaleY"
+		// 'skewX', 'skewY'
+	],
+	"2.0.0": [
+		//identity
+		"name",
+		"active",
+		"uuid",
+		//position, dimesion
+		"x",
+		"y",
+		"width",
+		"height",
+		"zIndex",
+		//prepresentation
+		"color",
+		"opacity",
+		//transformation
+		"anchorX",
+		"anchorY",
+		"angle",
+		"scaleX",
+		"scaleY"
+		// 'skewX', 'skewY'
+	]
+};
+const StatsStyleText = `
+.pstats {
+	position: fixed;
+	padding: 0px;
+	width: 150px;
+	height: 72px;
+	right: 0px;
+	bottom: 0px;
+	font-size: 10px;
+	font-family: 'Roboto Condensed', tahoma, sans-serif;
+	overflow: hidden;
+	user-select: none;
+	cursor: default;
+	background: #222;
+	border-radius: 3px;
+	z-index: 9999;
+}
+.pstats-container {
+	display: block;
+	position: relative;
+	color: #888;
+	white-space: nowrap;
+}
+.pstats-item {
+	position: absolute;
+	width: 250px;
+	height: 12px;
+	left: 0px;
+}
+.pstats-label {
+	position: absolute;
+	width: 150px;
+	height: 12px;
+	text-align: left;
+	transition: background 0.3s;
+}
+.pstats-label.alarm {
+	color: #ccc;
+	background: #800;
+
+	transition: background 0s;
+}
+.pstats-counter-id {
+	position: absolute;
+	width: 90px;
+	left: 0px;
+}
+.pstats-counter-value {
+	position: absolute;
+	width: 60px;
+	left: 90px;
+	text-align: right;
+}
+.pstats-canvas {
+	display: block;
+	position: absolute;
+	right: 0px;
+	top: 1px;
+}
+.pstats-fraction {
+	position: absolute;
+	width: 250px;
+	left: 0px;
+}
+.pstats-legend {
+	position: absolute;
+	width: 150px;
+	text-align: right;
+}
+.pstats-legend > span {
+	position: absolute;
+	right: 0px;
+}
+`;
+const NodesCache = {}; // Node cache which contains cc.Node refs
+const NodesCacheData = {}; // Node data cache
+const InspectLayerId = "cc-devtool-inspect-layer";
+const StatsLayerId = "fps";
+/**
+ * @description 控制游戏参数面板显示的类
+ * @param {Number} average 每隔多长时间刷新一次统计面板
+ * @param {Object} statsInfo 需要统计的信息
+ */
+class Stats {
+	constructor(average, statsInfo) {
 		this.statsInfo = statsInfo;
 		this.average = average;
 		this.time = performance.now();
-		const stats = document.createElement('div');
+		const stats = document.createElement("div");
 		stats.id = StatsLayerId;
-		const pstats = document.createElement('div');
-		pstats.className = 'pstats';
-		const style = document.createElement('style');
+		const pstats = document.createElement("div");
+		pstats.className = "pstats";
+		const style = document.createElement("style");
 		style.textContent = StatsStyleText;
 		document.head.appendChild(style);
-		const pstatsCon = document.createElement('div');
-		pstatsCon.className = 'pstats-container';
+		const pstatsCon = document.createElement("div");
+		pstatsCon.className = "pstats-container";
 		pstats.appendChild(pstatsCon);
 		stats.appendChild(pstats);
 		document.body.appendChild(stats);
@@ -44,7 +177,7 @@ export default function () {
 			this[key] = row;
 		});
 	}
-	Stats.prototype.tick = function() {
+	tick() {
 		const now = performance.now();
 		if (now - this.time < this.average) {
 			return;
@@ -56,236 +189,101 @@ export default function () {
 			row.valueNode.innerText = Math.round(row.value * 100) / 100;
 		});
 	}
-	/**
-	 * Get components data from given node
-	 * @param  {cc.Node} n
-	 * @return {Array} array of property/value
-	 */
-	function getComponentsData(node) {
-		const comps = node._components;
-		return comps.reduce((result, comp, i) => {
-			const props = comp.constructor.__props__
-				.filter(prop => {
-					return ignoredComponentProp.indexOf(prop) < 0 && prop[0] != '_';
-				})
-				.map(name => {
-					const type = typeOf(comp[name]);
-					const ret = {
-						name,
-						type: type.component,
-						rawType: type.raw
-					};
-					ret.value = valueOf(comp[name]);
-					return ret;
-				});
-			result.push({
-				key: comp.__classname__,
-				index: i,
-				uuid: node.uuid,
-				value: '<<Inspect>>',
-				props
+}
+/**
+ * Get components data from given node
+ * @param  {cc.Node} n
+ * @return {Array} array of property/value
+ */
+function getComponentsData(node) {
+	const comps = node._components;
+	return comps.reduce((result, comp, i) => {
+		const props = comp.constructor.__props__
+			.filter(prop => {
+				return ignoredComponentProp.indexOf(prop) < 0 && prop[0] != "_";
+			})
+			.map(name => {
+				const type = typeOf(comp[name]);
+				const ret = {
+					name,
+					type: type.component,
+					rawType: type.raw
+				};
+				ret.value = valueOf(comp[name]);
+				return ret;
 			});
-			return result;
-		}, []);
+		result.push({
+			key: comp.__classname__,
+			index: i,
+			uuid: node.uuid,
+			value: "<<Inspect>>",
+			props
+		});
+		return result;
+	}, []);
+}
+/**
+ * Convert CSS Color from hex string to color components
+ * @param  {String} hex
+ * @return {Object} {r,g,b}
+ */
+function hexToRgb(hex) {
+	var comps = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+	return comps ?
+		{
+			r: parseInt(comps[1], 16),
+			g: parseInt(comps[2], 16),
+			b: parseInt(comps[3], 16)
+		} :
+		null;
+}
+function valueOf(val) {
+	const t = typeof val;
+	if (
+		t === "undefined" ||
+		t === "string" ||
+		t === "number" ||
+		t === "boolean"
+	) {
+		return val;
 	}
-	/**
-	 * Convert CSS Color from hex string to color components
-	 * @param  {String} hex
-	 * @return {Object} {r,g,b}
-	 */
-	function hexToRgb(hex) {
-		var comps = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-		return comps ?
-			{
-				r: parseInt(comps[1], 16),
-				g: parseInt(comps[2], 16),
-				b: parseInt(comps[3], 16)
-			} :
-			null;
+	if (val === null) return "null";
+	switch (val.constructor.name) {
+		case "Color":
+		case "Size":
+		case "Vec2":
+		case "Vec3":
+			return val.toString();
 	}
-	function valueOf(val) {
-		const t = typeof val;
-		if (
-			t === 'undefined' ||
-			t === 'string' ||
-			t === 'number' ||
-			t === 'boolean'
-		) {
-			return val;
-		}
-		if (val === null) return 'null';
-		switch (val.constructor.name) {
-			case 'Color':
-			case 'Size':
-			case 'Vec2':
-			case 'Vec3':
-				return val.toString();
-		}
-		if (val && val.constructor) return `<${val.constructor.name}>`;
-		return '<unknown>';
+	if (val && val.constructor) return `<${val.constructor.name}>`;
+	return "<unknown>";
+}
+function typeOf(val) {
+	let raw = typeof val;
+	let component = "";
+	switch (raw) {
+		case "string":
+			component = "ElInput";
+			break;
+		case "number":
+			component = "ElInputNumber";
+			break;
+		case "boolean":
+			component = "ElSwitch";
+			break;
 	}
-	function typeOf(val) {
-		let raw = typeof val;
-		let component = '';
-		switch (raw) {
-			case 'string':
-				component = 'ElInput';
-				break;
-			case 'number':
-				component = 'ElInputNumber';
-				break;
-			case 'boolean':
-				component = 'ElSwitch';
-				break;
+	if (!component && val && val.constructor) {
+		raw = val.constructor.name;
+		if (raw === "Color") {
+			component = "ElColorPicker";
 		}
-		if (!component && val && val.constructor) {
-			raw = val.constructor.name;
-			if (raw === 'Color') {
-				component = 'ElColorPicker';
-			}
-		}
-		return {
-			raw,
-			component
-		};
 	}
-	// 需要忽略掉的组件属性
-	const ignoredComponentProp = [
-		"_name",
-		"_objFlags",
-		"node",
-		"name",
-		"uuid",
-		"__scriptAsset",
-		"_enabled",
-		"enabled",
-		"enabledInHierarchy",
-		"_isOnLoadCalled"
-	];
-	const SerializeProps = {
-		default: [
-			//identity
-			"name",
-			"active",
-			"uuid",
-			//position, dimesion
-			"x",
-			"y",
-			"width",
-			"height",
-			"zIndex",
-			//prepresentation
-			"color",
-			"opacity",
-			//transformation
-			"anchorX",
-			"anchorY",
-			"rotation",
-			"scaleX",
-			"scaleY"
-			// 'skewX', 'skewY'
-		],
-		"2.0.0": [
-			//identity
-			"name",
-			"active",
-			"uuid",
-			//position, dimesion
-			"x",
-			"y",
-			"width",
-			"height",
-			"zIndex",
-			//prepresentation
-			"color",
-			"opacity",
-			//transformation
-			"anchorX",
-			"anchorY",
-			"angle",
-			"scaleX",
-			"scaleY"
-			// 'skewX', 'skewY'
-		]
+	return {
+		raw,
+		component
 	};
-	const StatsStyleText = `
-	.pstats {
-		position: fixed;
-		padding: 0px;
-		width: 150px;
-		height: 72px;
-		right: 0px;
-		bottom: 0px;
-		font-size: 10px;
-		font-family: 'Roboto Condensed', tahoma, sans-serif;
-		overflow: hidden;
-		user-select: none;
-		cursor: default;
-		background: #222;
-		border-radius: 3px;
-		z-index: 9999;
-	}
-	.pstats-container {
-		display: block;
-		position: relative;
-		color: #888;
-		white-space: nowrap;
-	}
-	.pstats-item {
-		position: absolute;
-		width: 250px;
-		height: 12px;
-		left: 0px;
-	}
-	.pstats-label {
-		position: absolute;
-		width: 150px;
-		height: 12px;
-		text-align: left;
-		transition: background 0.3s;
-	}
-	.pstats-label.alarm {
-		color: #ccc;
-		background: #800;
-	
-		transition: background 0s;
-	}
-	.pstats-counter-id {
-		position: absolute;
-		width: 90px;
-		left: 0px;
-	}
-	.pstats-counter-value {
-		position: absolute;
-		width: 60px;
-		left: 90px;
-		text-align: right;
-	}
-	.pstats-canvas {
-		display: block;
-		position: absolute;
-		right: 0px;
-		top: 1px;
-	}
-	.pstats-fraction {
-		position: absolute;
-		width: 250px;
-		left: 0px;
-	}
-	.pstats-legend {
-		position: absolute;
-		width: 150px;
-		text-align: right;
-	}
-	.pstats-legend > span {
-		position: absolute;
-		right: 0px;
-	}
-	`;
-	const NodesCache = {}; // Node cache which contains cc.Node refs
-	const NodesCacheData = {}; // Node data cache
-	const InspectLayerId = 'cc-devtool-inspect-layer';
-	const StatsLayerId = 'fps';
+}
+function initCCDevtool() {
 	const ccdevtool = (window.ccdevtool = {
 		nodeId: 1,
 		stats: null,
@@ -301,12 +299,11 @@ export default function () {
 			try {
 				if (scene) {
 					if (!scene.name) {
-						scene.name = 'Scene';
+						scene.name = "Scene";
 					}
 					ret = this.serialize(scene, true);
 				}
-			}
-			catch(err) {
+			} catch (err) {
 				console.error(err);
 			}
 			return ret;
@@ -316,7 +313,7 @@ export default function () {
 		 * @param  {String} name, all type are prefixed with ':'
 		 * @param  {Any} data
 		 */
-		postMessage(name = '', data = {}) {
+		postMessage(name = "", data = {}) {
 			window.postMessage({
 					name,
 					data
@@ -410,8 +407,8 @@ export default function () {
 			}
 			this.toggleElement(`#${StatsLayerId}`, true);
 			cc.director.on(cc.Director.EVENT_BEFORE_UPDATE, this.beforeUpdate, this);
-            cc.director.on(cc.Director.EVENT_AFTER_VISIT, this.afterVisit, this);
-            cc.director.on(cc.Director.EVENT_AFTER_DRAW, this.afterDraw, this);
+			cc.director.on(cc.Director.EVENT_AFTER_VISIT, this.afterVisit, this);
+			cc.director.on(cc.Director.EVENT_AFTER_DRAW, this.afterDraw, this);
 		},
 		/**
 		 * @description Create stats panel
@@ -419,13 +416,39 @@ export default function () {
 		createStatsPanel() {
 			// fps = 1s / (frame + 两个frame之间的时间间隔)
 			const statsInfo = {
-				frame: { desc: 'Frame time (ms)', value: 0, before: 0, after: 0 }, // 每帧耗时
-				fps: { desc: 'Framerate (FPS)', below: 30, value: 0 }, // 帧率
-				draws: { desc: 'Draw call', value: 0 }, // drawCall次数
-				logic: { desc: 'Game Logic (ms)', value: 0, before: 0, after: 0 }, // logic js耗时
-				render: { desc: 'Renderer (ms)', value: 0, before: 0, after: 0 }, // 渲染耗时
-				mode: { desc: cc._renderType === cc.game.RENDER_TYPE_WEBGL ? 'WebGL' : 'Canvas', min: 1, value: cc._renderType === cc.game.RENDER_TYPE_WEBGL ? 0 : 1 } // 渲染模式
-			}
+				frame: {
+					desc: "Frame time (ms)",
+					value: 0,
+					before: 0,
+					after: 0
+				}, // 每帧耗时
+				fps: {
+					desc: "Framerate (FPS)",
+					below: 30,
+					value: 0
+				}, // 帧率
+				draws: {
+					desc: "Draw call",
+					value: 0
+				}, // drawCall次数
+				logic: {
+					desc: "Game Logic (ms)",
+					value: 0,
+					before: 0,
+					after: 0
+				}, // logic js耗时
+				render: {
+					desc: "Renderer (ms)",
+					value: 0,
+					before: 0,
+					after: 0
+				}, // 渲染耗时
+				mode: {
+					desc: cc._renderType === cc.game.RENDER_TYPE_WEBGL ? "WebGL" : "Canvas",
+					min: 1,
+					value: cc._renderType === cc.game.RENDER_TYPE_WEBGL ? 0 : 1
+				} // 渲染模式
+			};
 			this.stats = new Stats(500, statsInfo);
 		},
 		/**
@@ -436,19 +459,31 @@ export default function () {
 		 */
 		beforeUpdate() {
 			const now = performance.now();
-			const { logic, frame } = this.stats;
+			const {
+				logic,
+				frame
+			} = this.stats;
 			logic.before = now;
 			frame.before = now;
 		},
 		afterVisit() {
-			const { logic, render } = this.stats;
+			const {
+				logic,
+				render
+			} = this.stats;
 			const now = performance.now();
 			logic.after = now;
 			render.before = now;
 		},
 		afterDraw() {
 			const now = performance.now();
-			const { logic, draws, render, frame, fps } = this.stats;
+			const {
+				logic,
+				draws,
+				render,
+				frame,
+				fps
+			} = this.stats;
 			render.after = now;
 			frame.after = now;
 			logic.value = logic.after - logic.before;
@@ -517,9 +552,9 @@ export default function () {
 			const props =
 				SerializeProps[cc.ENGINE_VERSION >= "2.0.0" ? "2.0.0" : "default"];
 			const kv = props.reduce((result, key) => {
-				/** case 场景节点不允许获取和修改active属性 在后来的cocos版本中已被废弃 **/ 
+				/** case 场景节点不允许获取和修改active属性 在后来的cocos版本中已被废弃 **/
 				let value;
-				if (isScene && key === 'active') {
+				if (isScene && key === "active") {
 					value = true;
 				} else {
 					value = node[key];
@@ -541,19 +576,31 @@ export default function () {
 				const globalBound = node.getBoundingBoxToWorld();
 				const localBound = node.getBoundingBox();
 				//
-				const { anchorX, anchorY } = node;
-				bound.globalBound.x = globalBound.xMin * (1 - anchorX) + globalBound.xMax * anchorX;
-				bound.globalBound.y = globalBound.yMin *  (1 - anchorY) + globalBound.yMax * anchorY;
-				bound.globalBound.width = node.width,
-				bound.globalBound.height = node.height;
-				const { anchorX: pAnchorX, anchorY: pAnchorY, width: pW, height: pH } = node.parent;
+				const {
+					anchorX,
+					anchorY
+				} = node;
+				bound.globalBound.x =
+					globalBound.xMin * (1 - anchorX) + globalBound.xMax * anchorX;
+				bound.globalBound.y =
+					globalBound.yMin * (1 - anchorY) + globalBound.yMax * anchorY;
+				(bound.globalBound.width = node.width),
+				(bound.globalBound.height = node.height);
+				const {
+					anchorX: pAnchorX,
+					anchorY: pAnchorY,
+					width: pW,
+					height: pH
+				} = node.parent;
 				//
 				bound.localBound.width = localBound.width;
 				bound.localBound.height = localBound.height;
-				bound.localBound.top = (1 - pAnchorY) * pH - (localBound.yMin + localBound.height);
+				bound.localBound.top =
+					(1 - pAnchorY) * pH - (localBound.yMin + localBound.height);
 				bound.localBound.bottom = localBound.yMin + pAnchorY * pH;
 				bound.localBound.left = localBound.xMin + pAnchorX * pW;
-				bound.localBound.right = (1 - pAnchorX) * pW - (localBound.xMin + localBound.width);
+				bound.localBound.right =
+					(1 - pAnchorX) * pW - (localBound.xMin + localBound.width);
 			}
 			/**
 			 * Cache node in some place other than NodesCacheData
@@ -578,18 +625,19 @@ export default function () {
 	 */
 	if (cc.director) {
 		cc.director.on(cc.Director.EVENT_AFTER_SCENE_LAUNCH, () => {
-			this.postMessage('cc-devtool: lauch-scene');
+			console.error("cc-devtool: lauch-scene");
+			this.postMessage("cc-devtool: lauch-scene");
 		});
 	}
 	if (cc && cc.game) {
-		if (!cc.game.hasEventListener('game_on_show')) {
-			cc.game.on('game_on_show', function () {
-				ccdevtool.postMessage('cc-devtool: game-show');
+		if (!cc.game.hasEventListener("game_on_show")) {
+			cc.game.on("game_on_show", function () {
+				ccdevtool.postMessage("cc-devtool: game-show");
 			});
 		}
-		if (!cc.game.hasEventListener('game_on_hide')) {
-			cc.game.on('game_on_hide', function () {
-				ccdevtool.postMessage('cc-devtool: game-hide');
+		if (!cc.game.hasEventListener("game_on_hide")) {
+			cc.game.on("game_on_hide", function () {
+				ccdevtool.postMessage("cc-devtool: game-hide");
 			});
 		}
 	}
@@ -603,8 +651,13 @@ export default function () {
 		"background:transparent"
 	);
 	ccdevtool.postMessage("cc-devtool: cc-found");
-	window.addEventListener('message', (event) => {
-		console.log(event);
-	});
-	ccdevtool.on
+	return ccdevtool;
 }
+
+window.checkCCDevtool = function() {
+	if (window.cc) {
+		return initCCDevtool();
+	}
+}
+
+checkCCDevtool();

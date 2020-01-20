@@ -4,7 +4,8 @@
  * inspector脚本通过此脚本与background脚本进行通信
  */
 
-window.addEventListener('message', (event) => {
+// 监听来自injected脚本的消息
+window.addEventListener('message', event => {
     let hasCocosGameCanvas = !!document.querySelector('#GameCanvas');
     if (!hasCocosGameCanvas) {
         const nodes = [].slice.call(document.querySelectorAll('canvas'));
@@ -14,11 +15,20 @@ window.addEventListener('message', (event) => {
             })
         }
     }
-    if (event.source === window && hasCocosGameCanvas) {
-        chrome.runtime.sendMessage(event.data);
-    } else {
-        window.postMessage({
-            name: event.name
-        });
+    const { source, data } = event;
+    if (source === window && hasCocosGameCanvas) {
+        chrome.runtime.sendMessage(data);
     }
-})
+});
+
+// 监听来自background脚本的消息
+chrome.runtime.onMessage.addListener(message => {
+    const { name } = message;
+    if (name === 'cc-devtool: check-ccid') {
+        window.postMessage({
+            source: 'content',
+            name,
+            data: {}
+        })
+    }
+});

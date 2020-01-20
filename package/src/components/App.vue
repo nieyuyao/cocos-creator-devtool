@@ -1,5 +1,5 @@
 <template>
-	<div class="main">
+	<div class="main" id="app">
 		<!-- 顶部 -->
 		<ElHeader class="header">
 			<div class="title">
@@ -303,8 +303,7 @@
 
 <script>
 import Box from './Box.vue';
-import injectedScript from '../injected';
-import { log } from '../utils';
+import { log, error, warn } from '../utils';
 export default {
 	name: "App",
 	mixins: [],
@@ -322,8 +321,7 @@ export default {
 			inputNumberStep: 1,
 			showLoading: false, // 显示loading
 			timer: 0,
-			bound: {},
-			ccDevtoolId: 0 // ccdevtool id
+			bound: {}
 		};
 	},
 	mounted() {
@@ -351,11 +349,9 @@ export default {
 			log(`Connecting to window ${this.tabId}`);
 			this.conn.onMessage.addListener(message => {
 				if (!message) return;
-				log(message);
 				switch (message.name) {
 					case 'cc-devtool: panel-shown':
 						this.onPanelShown();
-						this.postMessage('cc-devtool: check-ccid');
 						break;
 					case 'cc-devtool: panel-hidden':
 						this.onPanelHidden();
@@ -374,9 +370,14 @@ export default {
 			});
 			this.postMessage('cc-devtool: panel-created');
 		},
+		disconnect() {
+			const conn = this.conn;
+			conn.disconnect();
+		},
 		postMessage(messageName) {
 			const { conn, tabId } = this;
 			conn.postMessage({
+				source: 'devtool',
 				name: messageName,
 				tabId
 			});
@@ -391,12 +392,11 @@ export default {
 		eval(code) {
 			return new Promise((resolve, reject) => {
 				try {
-					this.inspectedWindow.eval(code, res => {
-						if (res) log(res);
-						resolve(res);
+					this.inspectedWindow.eval(code, (res, err) => {
+						err ? reject(err) : resolve(res);
 					});
 				} catch (e) {
-					log(e);
+					error(e);
 					reject(e);
 				}
 			});
@@ -484,45 +484,53 @@ export default {
 		},
 		// 注入脚本
 		injectScript() {
-			// inject ccdevtool
-			const fn = injectedScript.toString();
-			const js = `(${fn})();`;
-			this.eval(js)
-				.then(() => log("ccdevtool injected!"));
+			// inject
+			const scriptName = chrome.runtime.getURL('injected.bundle.js');
+			const injectedScript = `
+				(function() {
+					var script = document.constructor.prototype.createElement.call(document, 'script');
+					script.src = "${scriptName}";
+					document.documentElement.appendChild(script);
+					script.parentNode.removeChild(script);
+				})();
+			`;
 			let tryTimes = 60;
 			const vm = this;
 			const doEval = function() {
-				vm.eval("ccdevtool")
+				vm.eval('checkCCDevtool()')
 					.then(ccdevtool => {
 						if (vm.ccdevtool) {
 							return;
 						}
 						vm.ccdevtool = {};
-						vm.ccDevtoolId++;
-						vm.ccdevtool.id = vm.ccDevtoolId;
 						for (let name in ccdevtool) {
 							vm.ccdevtool[name] = function(...args) {
 								args = JSON.stringify(args).slice(1, -1);
 								return vm.eval(`ccdevtool.${name}(${args})`);
 							};
 						}
-						// 向window.cc注入id属性
-						vm.eval(`window.cc.ccId=${vm.ccDevtoolId}`);
+					})
+					.catch(err => {
+						error(err);
 					});
 			};
-			return new Promise((resolve, reject) => {
-				let timer = 0;
-				const checkCCDevtool = () => {
-					doEval();
-					tryTimes -= 1;
-					if (tryTimes <= 0 || (vm.ccdevtool && Object.keys(vm.ccdevtool).length > 0)) {
-						timer && clearTimeout(timer);
-						resolve();
-					} else {
-						timer = setTimeout(checkCCDevtool, 1000);
+			return this.eval(injectedScript)
+			.then(() => {
+				log('ccdevtool injected!');
+				return new Promise((resolve, reject) => {
+					this.timer = 0;
+					const checkCCDevtool = () => {
+						doEval();
+						tryTimes -= 1;
+						if (tryTimes <= 0 || (vm.ccdevtool && Object.keys(vm.ccdevtool).length > 0)) {
+							this.timer && clearTimeout(this.timer);
+							resolve();
+						} else {
+							this.timer = setTimeout(checkCCDevtool, 1000);
+						}
 					}
-				}
-				checkCCDevtool();
+					checkCCDevtool();
+				});
 			});
 		},
 		// shown
@@ -532,6 +540,10 @@ export default {
 		// hidden
 		onPanelShown() {
 			this.isShowInspectLayer = true;
+		},
+		beforeDestoryed() {
+			this.disconnect();
+			clearTimeout(this.timer);
 		}
 	}
 };

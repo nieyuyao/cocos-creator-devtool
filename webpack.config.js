@@ -18,7 +18,8 @@ const baseConfig = {
 		'devtools-background': "./package/src/devtools-background.js",
 		background: "./package/src/background.js",
 		devtools: "./package/src/devtools.js",
-		content: "./package/src/content.js"
+		content: "./package/src/content.js",
+		injected: './package/src/injected.js'
 	},
 	output: {
 		filename: "[name].bundle.js",
