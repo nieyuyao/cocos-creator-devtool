@@ -57,17 +57,17 @@
 				<ElTree
 					v-else
 					ref="tree"
-					@node-click="onClickTreeNode"
 					:data="treeNode"
 					:highlight-current="true"
 					:default-expanded-keys="[1, 2]"
 					:expand-on-click-node="false"
 					:filter-node-method="filterNode"
+					@node-click="onClickTreeNode"
 				></ElTree>
 				
 			</ElAside>
 			<ElMain class="main">
-				<ElButton @click="inspectNode" type="primary" icon="el-icon-view" size="mini" round>Print</ElButton>
+				<ElButton @click="printNode" type="primary" icon="el-icon-view" size="mini" round>Print</ElButton>
 				<h3 class="title">Components</h3>
 				<div v-if="nodeComps">
 					<table
@@ -147,7 +147,7 @@
 				</ElTable>
 			</ElMain>
 			<ElAside class="right">
-				<Box :bound="bound"></Box>
+				<Box :bound="bound" @box-show="convertNodeToInspectLayer"></Box>
 			</ElAside>
 		</ElContainer>
 	</div>
@@ -340,6 +340,7 @@ export default {
 		}
 	},
 	methods: {
+		// 创建与background.js的连接
 		connect() {
 			this.inspectedWindow = chrome.devtools.inspectedWindow;
 			this.tabId = chrome.devtools.inspectedWindow.tabId;
@@ -370,10 +371,12 @@ export default {
 			});
 			this.postMessage('cc-devtool: panel-created');
 		},
+		// 断开与background.js的连接
 		disconnect() {
 			const conn = this.conn;
 			conn.disconnect();
 		},
+		// 发送消息
 		postMessage(messageName) {
 			const { conn, tabId } = this;
 			conn.postMessage({
@@ -382,6 +385,7 @@ export default {
 				tabId
 			});
 		},
+		// 初始化ccdevtool
 		init() {
 			this.initCCDevtoolPromise = this.initCCDevtool();
 			this.initCCDevtoolPromise
@@ -389,6 +393,10 @@ export default {
 					this.loadTreeNodes();
 				});
 		},
+		/**
+		 * @description 执行代码块
+		 * @param {String} code 代码片段
+		 */
 		eval(code) {
 			return new Promise((resolve, reject) => {
 				try {
@@ -401,9 +409,14 @@ export default {
 				}
 			});
 		},
+		// 重新加载插件
 		reload() {
 			location.reload();
 		},
+		/**
+		 * @description 判断节点属性类型
+		 * @param {String} key 属性名
+		 */
 		checkPropValueType({ key = '' }) {
 			if (['uuid', 'name'].indexOf(key) > -1) {
 				return 1;
@@ -475,8 +488,10 @@ export default {
 			this.loadTreeNodes();
 		},
 		// 调试节点
-		inspectNode() {
-			if (this.selectedNode) this.ccdevtool.inspectNode(this.selectedNode.uuid);
+		printNode() {
+			if (this.selectedNode) {
+				this.ccdevtool.printNode(this.selectedNode.uuid);
+			}
 		},
 		// 调试组件
 		inspectComponent(row) {
@@ -528,6 +543,15 @@ export default {
 		beforeDestoryed() {
 			this.disconnect();
 			clearTimeout(this.timer);
+		},
+		/**
+		 * @description 在inspect layer上显示节点
+		 * @param {uuid} String 节点的uuid
+		 */
+		convertNodeToInspectLayer(uuid = '') {
+			if (uuid && this.isShowInspectLayer) {
+				this.ccdevtool.convertNodeToInspectLayer(uuid);
+			}
 		}
 	}
 };

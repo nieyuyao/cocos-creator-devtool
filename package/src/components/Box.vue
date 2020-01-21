@@ -28,6 +28,8 @@
                 </div>
             </div>
         </div>
+        <!-- 屏幕坐标 -->
+        <div class="Screen"></div>
         <div class="divide"></div>
         <!-- 局部坐标 -->
         <div class="local">
@@ -232,62 +234,62 @@ export default {
         globalX() {
             const { globalBound } = this.bound;
             if (globalBound && typeof globalBound.x === 'number') {
-                return globalBound.x;
+                return Math.round(globalBound.x);
             }
             return '-';
         },
         globalY() {
             const { globalBound } = this.bound;
             if (globalBound && typeof globalBound.y === 'number') {
-                return globalBound.y;
+                return  Math.round(globalBound.y);
             }
             return '-';
         },
         localTop() {
             const { localBound } = this.bound;
             if (localBound && typeof localBound.top === 'number') {
-                return localBound.top;
+                return  Math.round(localBound.top);
             }
             return '-';
         },
         localBottom() {
             const { localBound } = this.bound;
             if (localBound && typeof localBound.bottom === 'number') {
-                return localBound.bottom;
+                return  Math.round(localBound.bottom);
             }
             return '-';
         },
         localLeft() {
             const { localBound } = this.bound;
             if (localBound && typeof localBound.left === 'number') {
-                return localBound.left;
+                return  Math.round(localBound.left);
             }
             return '-';
         },
         localRight() {
             const { localBound } = this.bound;
             if (localBound && typeof localBound.right === 'number') {
-                return localBound.right;
+                return Math.round(localBound.right);
             }
             return '-';
         },
         contentWidth() {
             const { globalBound, localBound } = this.bound;
             if (globalBound && typeof globalBound.width === 'number') {
-                return globalBound.width;
+                return Math.round(globalBound.width);
             }
             else if (localBound && typeof localBound.widt === 'number') {
-                return localBound.width;
+                return Math.round(localBound.width);
             }
             return '-';
         },
         contentHeight() {
             const { globalBound, localBound } = this.bound;
             if (globalBound && typeof globalBound.height === 'number') {
-                return globalBound.height;
+                return Math.round(globalBound.height);
             }
             else if (localBound && typeof localBound.height === 'number') {
-                return localBound.height;
+                return Math.round(localBound.height);
             }
             return '-';
         }
@@ -301,9 +303,12 @@ export default {
         },
         handleGlobalContentMouseEnter() {
             this.wrapperHover = true;
+            //
+            this.$emit('box-show', bound.uuid);
         },
         handleGlobalContentMouseLeave() {
             this.wrapperHover = false;
+            this.$emit('box-hide', bound.uuid);
         },
         handleLocalParentMouseEnter() {
             this.parentHover = true;
@@ -313,6 +318,8 @@ export default {
         },
         handleLocalChildMouseEnter() {
             this.childHover = true;
+            //
+            this.$emit('box-show', bound.uuid);
         },
         handleLocalChildMouseLeave() {
             this.childHover = false;

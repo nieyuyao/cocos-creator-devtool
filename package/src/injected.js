@@ -130,10 +130,13 @@ const StatsStyleText = `
 	right: 0px;
 }
 `;
-const NodesCache = {}; // Node cache which contains cc.Node refs
-const NodesCacheData = {}; // Node data cache
-const InspectLayerId = "cc-devtool-inspect-layer";
-const StatsLayerId = "fps";
+const NodesCache = {}; // Node cache which contains cc.Node refs 保存的是节点
+const NodesCacheData = {}; // Node data cache 序列化后的节点信息
+const InspectLayerInfo = {
+	id: 'cc-devtool-inspect-layer',
+	color: 'rgba(0, 126, 255, 0.6)'
+}
+const StatsLayerId = 'fps';
 /**
  * @description 控制游戏参数面板显示的类
  * @param {Number} average 每隔多长时间刷新一次统计面板
@@ -284,7 +287,10 @@ function typeOf(val) {
 	};
 }
 function initCCDevtool() {
+	const ccCanvas = document.getElementById('GameCanvas');
 	const ccdevtool = (window.ccdevtool = {
+		ccWidth: ccCanvas.width,
+		ccHeight: ccCanvas.height,
 		nodeId: 1,
 		stats: null,
 		/**
@@ -348,26 +354,25 @@ function initCCDevtool() {
 		 * @description Hide inspect layer
 		 */
 		hideInspectLayer() {
-			this.toggleElement(`#${InspectLayerId}`, false);
+			this.toggleElement(`#${InspectLayerInfo.id}`, false);
 		},
 		/**
 		 * @description Show inspect layer
 		 */
 		showInspectLayer() {
-			const inspectLayer = document.getElementById(InspectLayerId);
+			const inspectLayer = document.getElementById(InspectLayerInfo.id);
 			if (!inspectLayer) {
 				this.createInspectLayer();
 			}
-			this.toggleElement(`#${InspectLayerId}`, true);
+			this.toggleElement(`#${InspectLayerInfo.id}`, true);
 		},
 		/**
 		 * @description Create inspect layer
 		 */
 		createInspectLayer() {
-			const inspectLayer = document.createElement("canvas");
-			const ccCanvas = document.getElementById("GameCanvas");
-			inspectLayer.width = ccCanvas.width;
-			inspectLayer.height = ccCanvas.height;
+			const inspectLayer = document.createElement('canvas');
+			inspectLayer.width = this.width;
+			inspectLayer.height = this.height;
 			const {
 				x: bx,
 				y: by
@@ -385,8 +390,31 @@ function initCCDevtool() {
 				z-index: 999999;
 				pointer-events: none;
 			`;
-			inspectLayer.id = InspectLayerId;
+			inspectLayer.id = InspectLayerInfo.id;
 			document.body.appendChild(inspectLayer);
+		},
+		/**
+		 * @description 在inspect layer上显示节点
+		 * @param {uuid} String 节点的uuid
+		 */
+		convertNodeToInspectLayer(uuid) {
+			const { id, color } = InspectLayerInfo;
+			const inspectLayer = document.getElementById(id);
+			const ctx = inspectLayer.getContext('2d');
+			const node = NodesCacheData[uuid];
+			if (node) {
+				const { globalBound } = node.bound;
+				const { x, y, width, height } = globalBound;
+				ctx.clearRect(0, 0, inspectLayer.width, inspectLayer.height);
+				// 坐标转换
+				ctx.fillStyle = color;
+				ctx.rect(x, y, width, height);
+			}
+		},
+		disableNodeToInspectLayer() {
+			const inspectLayer = document.getElementById(id);
+			const ctx = inspectLayer.getContext('2d');
+			ctx.clearRect(0, 0, inspectLayer.width, inspectLayer.height);
 		},
 		/**
 		 * @description Hide stats panel
@@ -503,7 +531,6 @@ function initCCDevtool() {
 		 * @param  {String} uuid, uuid of node
 		 */
 		selectNode(uuid) {
-			console.error(uuid);
 			window.$n1 = window.$n0;
 			window.$n0 = NodesCache[uuid];
 		},
@@ -539,7 +566,7 @@ function initCCDevtool() {
 		 * Print node in Console
 		 * @param  {String} uuid, uuid of a node
 		 */
-		inspectNode(uuid) {
+		printNode(uuid) {
 			console.trace((window.$n = NodesCache[uuid]));
 		},
 		/**
@@ -572,6 +599,7 @@ function initCCDevtool() {
 			let bound = {};
 			bound.localBound = {};
 			bound.globalBound = {};
+			bound.screenBound = {};
 			if (node.parent) {
 				const globalBound = node.getBoundingBoxToWorld();
 				const localBound = node.getBoundingBox();
@@ -580,12 +608,10 @@ function initCCDevtool() {
 					anchorX,
 					anchorY
 				} = node;
-				bound.globalBound.x =
-					globalBound.xMin * (1 - anchorX) + globalBound.xMax * anchorX;
-				bound.globalBound.y =
-					globalBound.yMin * (1 - anchorY) + globalBound.yMax * anchorY;
-				(bound.globalBound.width = node.width),
-				(bound.globalBound.height = node.height);
+				bound.globalBound.x = globalBound.xMin * (1 - anchorX) + globalBound.xMax * anchorX;
+				bound.globalBound.y = globalBound.yMin * (1 - anchorY) + globalBound.yMax * anchorY;
+				bound.globalBound.width = node.width;
+				bound.globalBound.height = node.height;
 				const {
 					anchorX: pAnchorX,
 					anchorY: pAnchorY,
@@ -595,18 +621,17 @@ function initCCDevtool() {
 				//
 				bound.localBound.width = localBound.width;
 				bound.localBound.height = localBound.height;
-				bound.localBound.top =
-					(1 - pAnchorY) * pH - (localBound.yMin + localBound.height);
+				bound.localBound.top = (1 - pAnchorY) * pH - (localBound.yMin + localBound.height);
 				bound.localBound.bottom = localBound.yMin + pAnchorY * pH;
 				bound.localBound.left = localBound.xMin + pAnchorX * pW;
-				bound.localBound.right =
-					(1 - pAnchorX) * pW - (localBound.xMin + localBound.width);
+				bound.localBound.right = (1 - pAnchorX) * pW - (localBound.xMin + localBound.width);
 			}
 			/**
 			 * Cache node in some place other than NodesCacheData
 			 * pass node reference to devtool will cause `Object reference chain is too long` error
 			 */
 			NodesCache[node.uuid] = node;
+			bound.uuid = node.uuid;
 			const ret = (NodesCacheData[node.uuid] = {
 				id: this.nodeId++,
 				uuid: node.uuid,
