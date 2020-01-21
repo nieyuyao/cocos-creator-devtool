@@ -625,8 +625,7 @@ function initCCDevtool() {
 	 */
 	if (cc.director) {
 		cc.director.on(cc.Director.EVENT_AFTER_SCENE_LAUNCH, () => {
-			console.error("cc-devtool: lauch-scene");
-			this.postMessage("cc-devtool: lauch-scene");
+			ccdevtool.postMessage("cc-devtool: lauch-scene");
 		});
 	}
 	if (cc && cc.game) {
@@ -655,7 +654,11 @@ function initCCDevtool() {
 }
 
 window.checkCCDevtool = function() {
-	if (window.cc) {
+	const { ccdevtool, cc } = window;
+	if (ccdevtool) {
+		return ccdevtool;
+	}
+	if (cc) {
 		return initCCDevtool();
 	}
 }

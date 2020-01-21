@@ -17,7 +17,7 @@ import './assets/reset.css';
 import locale from 'element-ui/lib/locale/lang/en';
 import AppConnecting from './components/AppConnecting.vue';
 import App from "./components/App.vue";
-
+import { log, error } from './utils';
 Vue.use(ElHeader, { locale });
 Vue.use(ElSwitch, { locale });
 Vue.use(ElTooltip, { locale });
@@ -36,16 +36,42 @@ const app = new Vue({
     render: (h) => h(AppConnecting)
 }).$mount('#app');
 
+function injectScript(cb) {
+    const scriptName = chrome.runtime.getURL('injected.bundle.js');
+    const injectedScript = `
+        (function() {
+            var script = document.constructor.prototype.createElement.call(document, 'script');
+            script.src = "${scriptName}";
+            document.documentElement.appendChild(script);
+            script.parentNode.removeChild(script);
+        })();
+    `;
+    chrome.devtools.inspectedWindow.eval(injectedScript, (res, err) => {
+        if (err) {
+            error(err);
+            return;
+        }
+        log('ccdevtool injected!');
+        cb();
+    });
+}
+
 function initApp() {
     new Vue({
         extends: App
     }).$mount('#app');
 }
-initApp();
+
+function inject() {
+    injectScript(initApp);
+}
 
 chrome.devtools.network.onNavigated.addListener(() => {
     app.$destroy();
-    initApp();
+    inject();
 });
+
+//
+inject();
 
 

@@ -361,7 +361,7 @@ export default {
 						break;
 					case 'cc-devtool: game-show':
 					case 'cc-devtool: lauch-scene':
-						this.injectPromise
+						this.initCCDevtool()
 							.then(() => {
 								this.loadTreeNodes();
 							});
@@ -383,8 +383,8 @@ export default {
 			});
 		},
 		init() {
-			this.injectPromise = this.injectScript();
-			this.injectPromise
+			this.initCCDevtoolPromise = this.initCCDevtool();
+			this.initCCDevtoolPromise
 				.then(() => {
 					this.loadTreeNodes();
 				});
@@ -482,55 +482,39 @@ export default {
 		inspectComponent(row) {
 			this.ccdevtool.inspectComponent(row.uuid, row.index);
 		},
-		// 注入脚本
-		injectScript() {
-			// inject
-			const scriptName = chrome.runtime.getURL('injected.bundle.js');
-			const injectedScript = `
-				(function() {
-					var script = document.constructor.prototype.createElement.call(document, 'script');
-					script.src = "${scriptName}";
-					document.documentElement.appendChild(script);
-					script.parentNode.removeChild(script);
-				})();
-			`;
+		initCCDevtool() {
 			let tryTimes = 60;
 			const vm = this;
 			const doEval = function() {
 				vm.eval('checkCCDevtool()')
 					.then(ccdevtool => {
-						if (vm.ccdevtool) {
-							return;
-						}
-						vm.ccdevtool = {};
-						for (let name in ccdevtool) {
-							vm.ccdevtool[name] = function(...args) {
-								args = JSON.stringify(args).slice(1, -1);
-								return vm.eval(`ccdevtool.${name}(${args})`);
-							};
+						if (ccdevtool) {
+							vm.ccdevtool = {};
+							for (let name in ccdevtool) {
+								vm.ccdevtool[name] = function(...args) {
+									args = JSON.stringify(args).slice(1, -1);
+									return vm.eval(`ccdevtool.${name}(${args})`);
+								};
+							}
 						}
 					})
 					.catch(err => {
 						error(err);
 					});
 			};
-			return this.eval(injectedScript)
-			.then(() => {
-				log('ccdevtool injected!');
-				return new Promise((resolve, reject) => {
-					this.timer = 0;
-					const checkCCDevtool = () => {
-						doEval();
-						tryTimes -= 1;
-						if (tryTimes <= 0 || (vm.ccdevtool && Object.keys(vm.ccdevtool).length > 0)) {
-							this.timer && clearTimeout(this.timer);
-							resolve();
-						} else {
-							this.timer = setTimeout(checkCCDevtool, 1000);
-						}
+			return new Promise((resolve, reject) => {
+				this.timer = 0;
+				const checkCCDevtool = () => {
+					doEval();
+					tryTimes -= 1;
+					if (tryTimes <= 0 || vm.ccdevtool) {
+						this.timer && clearTimeout(this.timer);
+						resolve();
+					} else {
+						this.timer = setTimeout(checkCCDevtool, 1000);
 					}
-					checkCCDevtool();
-				});
+				}
+				checkCCDevtool();
 			});
 		},
 		// shown
