@@ -1,291 +1,8 @@
-const ignoredComponentProp = [
-	"_name",
-	"_objFlags",
-	"node",
-	"name",
-	"uuid",
-	"__scriptAsset",
-	"_enabled",
-	"enabled",
-	"enabledInHierarchy",
-	"_isOnLoadCalled"
-];
-const SerializeProps = {
-	default: [
-		//identity
-		"name",
-		"active",
-		"uuid",
-		//position, dimesion
-		"x",
-		"y",
-		"width",
-		"height",
-		"zIndex",
-		//prepresentation
-		"color",
-		"opacity",
-		//transformation
-		"anchorX",
-		"anchorY",
-		"rotation",
-		"scaleX",
-		"scaleY"
-		// 'skewX', 'skewY'
-	],
-	"2.0.0": [
-		//identity
-		"name",
-		"active",
-		"uuid",
-		//position, dimesion
-		"x",
-		"y",
-		"width",
-		"height",
-		"zIndex",
-		//prepresentation
-		"color",
-		"opacity",
-		//transformation
-		"anchorX",
-		"anchorY",
-		"angle",
-		"scaleX",
-		"scaleY"
-		// 'skewX', 'skewY'
-	]
-};
-const StatsStyleText = `
-.pstats {
-	position: fixed;
-	padding: 0px;
-	width: 150px;
-	height: 72px;
-	right: 0px;
-	bottom: 0px;
-	font-size: 10px;
-	font-family: 'Roboto Condensed', tahoma, sans-serif;
-	overflow: hidden;
-	user-select: none;
-	cursor: default;
-	background: #222;
-	border-radius: 3px;
-	z-index: 9999;
-}
-.pstats-container {
-	display: block;
-	position: relative;
-	color: #888;
-	white-space: nowrap;
-}
-.pstats-item {
-	position: absolute;
-	width: 250px;
-	height: 12px;
-	left: 0px;
-}
-.pstats-label {
-	position: absolute;
-	width: 150px;
-	height: 12px;
-	text-align: left;
-	transition: background 0.3s;
-}
-.pstats-label.alarm {
-	color: #ccc;
-	background: #800;
-
-	transition: background 0s;
-}
-.pstats-counter-id {
-	position: absolute;
-	width: 90px;
-	left: 0px;
-}
-.pstats-counter-value {
-	position: absolute;
-	width: 60px;
-	left: 90px;
-	text-align: right;
-}
-.pstats-canvas {
-	display: block;
-	position: absolute;
-	right: 0px;
-	top: 1px;
-}
-.pstats-fraction {
-	position: absolute;
-	width: 250px;
-	left: 0px;
-}
-.pstats-legend {
-	position: absolute;
-	width: 150px;
-	text-align: right;
-}
-.pstats-legend > span {
-	position: absolute;
-	right: 0px;
-}
-`;
+import { SerializeProps, InspectLayerInfo, StatsLayerId } from './assets/constants';
+import { getComponentsData, hexToRgb } from './assets/utils';
+import Stats from './help/Stats';
 const NodesCache = {}; // Node cache which contains cc.Node refs 保存的是节点
 const NodesCacheData = {}; // Node data cache 序列化后的节点信息
-const InspectLayerInfo = {
-	id: 'cc-devtool-inspect-layer',
-	color: 'rgba(0, 126, 255, 0.6)'
-}
-const StatsLayerId = 'fps';
-/**
- * @description 控制游戏参数面板显示的类
- * @param {Number} average 每隔多长时间刷新一次统计面板
- * @param {Object} statsInfo 需要统计的信息
- */
-class Stats {
-	constructor(average, statsInfo) {
-		this.statsInfo = statsInfo;
-		this.average = average;
-		this.time = performance.now();
-		const stats = document.createElement("div");
-		stats.id = StatsLayerId;
-		const pstats = document.createElement("div");
-		pstats.className = "pstats";
-		const style = document.createElement("style");
-		style.textContent = StatsStyleText;
-		document.head.appendChild(style);
-		const pstatsCon = document.createElement("div");
-		pstatsCon.className = "pstats-container";
-		pstats.appendChild(pstatsCon);
-		stats.appendChild(pstats);
-		document.body.appendChild(stats);
-		Object.keys(statsInfo).forEach((key, index) => {
-			const row = statsInfo[key];
-			const item = document.createElement("div");
-			item.className = "pstats-item";
-			const label = document.createElement("div");
-			label.className = "pstats-label";
-			const counter = document.createElement("span");
-			counter.className = "pstats-counter-id";
-			counter.textContent = row.desc;
-			const value = document.createElement("div");
-			value.className = "pstats-counter-value";
-			label.appendChild(counter);
-			label.appendChild(value);
-			item.appendChild(label);
-			pstatsCon.appendChild(item);
-			item.style.top = `${index * 12}px`;
-			row.valueNode = value;
-			value.innerText = row.value || 0;
-			this[key] = row;
-		});
-	}
-	tick() {
-		const now = performance.now();
-		if (now - this.time < this.average) {
-			return;
-		}
-		this.time = now;
-		const statsInfo = this.statsInfo;
-		Object.keys(statsInfo).forEach(key => {
-			const row = statsInfo[key];
-			row.valueNode.innerText = Math.round(row.value * 100) / 100;
-		});
-	}
-}
-/**
- * Get components data from given node
- * @param  {cc.Node} n
- * @return {Array} array of property/value
- */
-function getComponentsData(node) {
-	const comps = node._components;
-	return comps.reduce((result, comp, i) => {
-		const props = comp.constructor.__props__
-			.filter(prop => {
-				return ignoredComponentProp.indexOf(prop) < 0 && prop[0] != "_";
-			})
-			.map(name => {
-				const type = typeOf(comp[name]);
-				const ret = {
-					name,
-					type: type.component,
-					rawType: type.raw
-				};
-				ret.value = valueOf(comp[name]);
-				return ret;
-			});
-		result.push({
-			key: comp.__classname__,
-			index: i,
-			uuid: node.uuid,
-			value: "<<Inspect>>",
-			props
-		});
-		return result;
-	}, []);
-}
-/**
- * Convert CSS Color from hex string to color components
- * @param  {String} hex
- * @return {Object} {r,g,b}
- */
-function hexToRgb(hex) {
-	var comps = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-	return comps ?
-		{
-			r: parseInt(comps[1], 16),
-			g: parseInt(comps[2], 16),
-			b: parseInt(comps[3], 16)
-		} :
-		null;
-}
-function valueOf(val) {
-	const t = typeof val;
-	if (
-		t === "undefined" ||
-		t === "string" ||
-		t === "number" ||
-		t === "boolean"
-	) {
-		return val;
-	}
-	if (val === null) return "null";
-	switch (val.constructor.name) {
-		case "Color":
-		case "Size":
-		case "Vec2":
-		case "Vec3":
-			return val.toString();
-	}
-	if (val && val.constructor) return `<${val.constructor.name}>`;
-	return "<unknown>";
-}
-function typeOf(val) {
-	let raw = typeof val;
-	let component = "";
-	switch (raw) {
-		case "string":
-			component = "ElInput";
-			break;
-		case "number":
-			component = "ElInputNumber";
-			break;
-		case "boolean":
-			component = "ElSwitch";
-			break;
-	}
-	if (!component && val && val.constructor) {
-		raw = val.constructor.name;
-		if (raw === "Color") {
-			component = "ElColorPicker";
-		}
-	}
-	return {
-		raw,
-		component
-	};
-}
 function initCCDevtool() {
 	const ccdevtool = (window.ccdevtool = {
 		nodeId: 1,
@@ -301,8 +18,15 @@ function initCCDevtool() {
 			// 如果场景已经被加载序列化场景
 			try {
 				if (scene) {
+					const size = cc.view.getCanvasSize();
+					this.canvasWidth = size.width;
+					this.canvasHeight = size.height;
 					if (!scene.name) {
 						scene.name = "Scene";
+					}
+					// 获取场景中的第一个节点 => Canvas节点
+					if (scene.children[0]) {
+						this.canvasNode = scene.children[0];
 					}
 					ret = this.serialize(scene, true);
 				}
@@ -363,21 +87,11 @@ function initCCDevtool() {
 			}
 			this.toggleElement(`#${InspectLayerInfo.id}`, true);
 		},
-		calcCCSize() {
-			if (!this.ccHeight || !this.ccWidth) {
-				const ccCanvas = document.getElementById('GameCanvas');
-				if (ccCanvas && ccCanvas.height) {
-					this.ccHeight = ccCanvas.height;
-					this.ccWidth = ccCanvas.width;
-				}
-			}
-		},
 		/**
 		 * @description Create inspect layer
 		 */
 		createInspectLayer() {
 			const ccCanvas = document.getElementById('GameCanvas');
-			this.calcCCSize();
 			const inspectLayer = document.createElement('canvas');
 			inspectLayer.width = ccCanvas.width;
 			inspectLayer.height = ccCanvas.height;
@@ -402,6 +116,26 @@ function initCCDevtool() {
 			document.body.appendChild(inspectLayer);
 		},
 		/**
+		 * globalPosition => glPosition => screenPostion
+		 * @description 节点的全局坐标
+		 * @param {cc.Vec2} globalPosition 节点的全局坐标
+		 * @returns {cc.Vec2} 节点的屏幕坐标
+		 */
+		convertToScreenPosition(globalPosition) {
+			if (!globalPosition instanceof cc.Vec2) {
+				throw new TypeError('position is not cc.Vec2');
+			}
+			const { x: px, y: py } = globalPosition;
+			const { canvasWidth, canvasHeight } = this;
+			const { width: viewWidth, height: viewHeight, anchorX, anchorY } = this.canvasNode;
+			const glX = (px - (0.5 - anchorX) * viewWidth/ 2) / (viewWidth / 2);
+			const glY = (py - (0.5 - anchorY) * viewHeight  / 2) / (viewHeight / 2);
+			return new cc.Vec2(
+				(0.5 + glX) * canvasWidth,
+				(0.5 - glY) * canvasHeight
+			)
+		},
+		/**
 		 * @description 在inspect layer上显示节点
 		 * @param {uuid} String 节点的uuid
 		 */
@@ -411,7 +145,7 @@ function initCCDevtool() {
 			const ctx = inspectLayer.getContext('2d');
 			const node = NodesCacheData[uuid];
 			if (node) {
-				const screenBound = node.screenBound;
+				const screenBound = node.bound.screenBound;
 				const { x, y, width, height } = screenBound;
 				ctx.clearRect(0, 0, inspectLayer.width, inspectLayer.height);
 				// 坐标转换
@@ -613,29 +347,25 @@ function initCCDevtool() {
 			if (node.parent) {
 				bound.width = node.width;
 				bound.height = node.height;
-				const globalBound = node.getBoundingBoxToWorld();
-				const localBound = node.getBoundingBox();
+				const globalPosition = node.convertToWorldSpaceAR();
+				bound.globalBound.x = globalPosition.x;
+				bound.globalBound.y = globalPosition.y;
 				//
-				const {
-					anchorX,
-					anchorY
-				} = node;
-				bound.globalBound.x = globalBound.xMin * (1 - anchorX) + globalBound.xMax * anchorX;
-				bound.globalBound.y = globalBound.yMin * (1 - anchorY) + globalBound.yMax * anchorY;
+				const localBound = node.getBoundingBox();
 				const {
 					anchorX: pAnchorX,
 					anchorY: pAnchorY,
 					width: pW,
 					height: pH
 				} = node.parent;
-				//
 				bound.localBound.top = (1 - pAnchorY) * pH - (localBound.yMin + localBound.height);
 				bound.localBound.bottom = localBound.yMin + pAnchorY * pH;
 				bound.localBound.left = localBound.xMin + pAnchorX * pW;
 				bound.localBound.right = (1 - pAnchorX) * pW - (localBound.xMin + localBound.width);
-				// TODO:如何计算相对于屏幕的坐标
-				this.calcCCSize();
-				const { ccWidth, ccHeight } = this;
+				//
+				const screenPosition = this.convertToScreenPosition(globalPosition);
+				bound.screenBound.left = screenPosition.x;
+				bound.screenBound.top = screenPosition.y;
 			}
 			/**
 			 * Cache node in some place other than NodesCacheData
@@ -688,7 +418,6 @@ function initCCDevtool() {
 	ccdevtool.postMessage("cc-devtool: cc-found");
 	return ccdevtool;
 }
-
 window.checkCCDevtool = function() {
 	const { ccdevtool, cc } = window;
 	if (ccdevtool) {
@@ -698,5 +427,4 @@ window.checkCCDevtool = function() {
 		return initCCDevtool();
 	}
 }
-
 checkCCDevtool();

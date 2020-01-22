@@ -4,11 +4,6 @@
  * 通过chrome.runtime.onConnect与devtool进行通信
  */
 
-
-import {
-	warn
-} from './utils.js'
-
 const ports = {};
 
 // 监听来自devtool的创建连接事件

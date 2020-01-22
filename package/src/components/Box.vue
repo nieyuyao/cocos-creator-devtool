@@ -5,9 +5,9 @@
             <h3 class="title">Global</h3>
             <div 
                 class="bounding"
-                :class="{'bounding-hover': boundingHover, 'content-hover': wrapperHover}"
-                @mouseover="mouseOver('global', 'bounding')"
-                @mouseout="mouseOut('global', 'bounding')"
+                :class="{'bounding-hover': boundingHover, 'content-hover': contentHover}"
+                @mouseenter="mouseEnter('global', 'bounding')"
+                @mouseleave="mouseLeave('global', 'bounding')"
             >
                 <!-- 坐标轴 -->
                 <div class="axis-x"></div>
@@ -16,8 +16,8 @@
                 <div class="wrapper">
                     <div
                         class="content"
-                        @mouseover.stop="mouseOver('global', 'wrapper')"
-                        @mouseout.stop="mouseOut('global', 'wrapper')"
+                        @mouseenter.stop="mouseEnter('global', 'content')"
+                        @mouseleave.stop="mouseLeave('global', 'content')"
                     >
                         <span>{{contentWidth}}×{{contentHeight}}</span>
                         <div class="place">
@@ -29,34 +29,14 @@
             </div>
         </div>
         <div class="divide"></div>
-        <!-- 屏幕坐标 -->
-        <div class="screen">
-            <h3 class="title">Screen</h3>
-            <div
-                class="parent"
-                @mouseover="mouseOver('screen', 'parent')"
-                @mouseout="mouseOut('screen', 'parent')"
-            >
-                <div class="place-top">{{screenTop}}</div>
-                <div class="place-left">{{screenLeft}}</div>
-                <div
-                    class="child"
-                    @mouseover.stop="mouseOver('screen', 'child')"
-                    @mouseout.stop="mouseOut('screen', 'child')"
-                >
-                    <span>{{contentWidth}}×{{contentHeight}}</span>
-                </div>
-            </div>
-        </div>
-        <div class="divide"></div>
         <!-- 局部坐标 -->
         <div class="local">
             <h3 class="title">Local</h3>
             <div
                 class="parent"
                 :class="{'parent-hover': parentHover, 'child-hover': childHover}"
-                @mouseover="mouseOver('local', 'parent')"
-                @mouseout="mouseOut('local', 'parent')"
+                @mouseenter="mouseEnter('local', 'parent')"
+                @mouseleave="mouseLeave('local', 'parent')"
             >
                 <div class="place-top">{{localTop}}</div>
                 <div class="place-bottom">{{localBottom}}</div>
@@ -64,8 +44,8 @@
                 <div class="place-right">{{localRight}}</div>
                 <div
                     class="child"
-                    @mouseover.stop="mouseOver('local', 'child')"
-                    @mouseout.stop="mouseOut('local', 'child')"
+                    @mouseenter.stop="mouseEnter('local', 'child')"
+                    @mouseleave.stop="mouseLeave('local', 'child')"
                 >
                     <span>{{contentWidth}}×{{contentHeight}}</span>
                 </div>
@@ -85,6 +65,7 @@
         margin: 40px 0 40px 40px;
         border: 1px dashed black;
         background-color:#f3cea5;
+        transition: background-color 0.2s 0s linear;
         &.bounding-hover {
             .content {
                 background-color: #fff;
@@ -148,6 +129,7 @@
             font-size: 10px;
             transform: translate(-50%, -50%);
             background-color: #a8c5e5;
+            transition: background-color 0.2s 0s linear;
             .place {
                 display: none;
                 position: absolute;
@@ -159,6 +141,7 @@
                 border-left: 1px solid red;
                 color: red;
                 font-size: 8px;
+                pointer-events: none;
             }
             .place-x {
                 position: absolute;
@@ -178,7 +161,7 @@
     height: 1px;
     background-color: #909399;
 }
-.local, .screen {
+.local {
     .parent {
         position: relative;
         display: flex;
@@ -189,6 +172,7 @@
         margin: 40px 0 40px 40px;
         border: 1px dashed black;
         background-color:#f3cea5;
+        transition: background-color 0.2s 0s linear;
         &.parent-hover {
             .child {
                 background-color: #fff;
@@ -206,7 +190,8 @@
         height: 60px;
         border: 1px solid black;
         font-size: 10px;
-        background-color: #a8c5e5;        
+        background-color: #a8c5e5;
+        transition: background-color 0.2s 0s linear;
     }
     [class*="place-"] {
         position: absolute;
@@ -244,7 +229,7 @@ export default {
         return {
             // 控制全局盒子的显示
             boundingHover: false, // mouse是否浮动在boundingt元素上方
-            wrapperHover: false, // mouse是否浮动在content元素上方
+            contentHover: false, // mouse是否浮动在content元素上方
             // 控制局部盒子的显示
             parentHover: false, // mouse是否浮动在parent元素上方
             childHover: false, // mouse是否浮动在child元素上方
@@ -285,65 +270,53 @@ export default {
         contentHeight() {
             const height = this.bound.height;
             return height ? Math.round(height) : '-';
-        },
-        screenTop() {
-            const { screenBound } = this.bound;
-            return screenBound && typeof screenBound.top === 'number' ?  Math.round(screenBound.top) : '-';
-        },
-        screenLeft() {
-            const { screenBound } = this.bound;
-            return screenBound && typeof screenBound.left === 'number' ?  Math.round(screenBound.left) : '-';
         }
     },
     methods: {
-        mouseOver(type, node) {
+        mouseEnter(type, node) {
             const sign = `${type}-${node}`;
             const uuid = this.bound.uuid;
             switch (sign) {
                 case 'global-bounding':
                     this.boundingHover = true;
                     break;
-                case 'global-wrapper':
-                    this.wrapperHover = true;
+                case 'global-content':
+                    this.boundingHover = false;
+                    this.contentHover = true;
                     this.$emit('box-show', uuid);
                     break;
                 case 'local-parent':
                     this.parentHover = true;
                     break;
                 case 'local-child':
+                    this.parentHover = false;
                     this.childHover = true;
-                    this.$emit('box-show', uuid);
-                case 'screen-parent':
-                    this.screenParentHover = true;
-                    break;
-                case 'screen-child':
-                    this.screenChildHover = true;
                     this.$emit('box-show', uuid);
                     break;
             }
         },
-        mouseOut(type, node) {
+        mouseLeave(type, node) {
             const sign = `${type}-${node}`;
             const uuid = this.bound.uuid;
             switch (sign) {
+                //
                 case 'global-bounding':
                     this.boundingHover = false;
+                    this.contentHover = false;
                     break;
-                case 'global-wrapper':
-                    this.wrapperHover = false;
+                case 'global-content':
+                    this.boundingHover = true;
+                    this.contentHover = false;
                     this.$emit('box-hide', uuid);
                     break;
+                //
                 case 'local-parent':
                     this.parentHover = false;
+                    this.childHover = false;
                     break;
                 case 'local-child':
+                    this.parentHover = true;
                     this.childHover = false;
-                    this.$emit('box-hide', uuid);
-                case 'screen-parent':
-                    this.screenParentHover = false;
-                    break;
-                case 'screen-child':
-                    this.screenChildHover = false;
                     this.$emit('box-hide', uuid);
                     break;
             }

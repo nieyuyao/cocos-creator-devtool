@@ -17,7 +17,7 @@ import './assets/reset.css';
 import locale from 'element-ui/lib/locale/lang/en';
 import AppConnecting from './components/AppConnecting.vue';
 import App from "./components/App.vue";
-import { log, error } from './utils';
+import { log, error } from './assets/utils';
 Vue.use(ElHeader, { locale });
 Vue.use(ElSwitch, { locale });
 Vue.use(ElTooltip, { locale });
@@ -63,13 +63,14 @@ function initApp() {
 }
 
 function inject() {
-    injectScript(initApp);
+    initApp();
+    // injectScript(initApp);
 }
 
-chrome.devtools.network.onNavigated.addListener(() => {
-    app.$destroy();
-    inject();
-});
+// chrome.devtools.network.onNavigated.addListener(() => {
+//     app.$destroy();
+//     inject();
+// });
 
 //
 inject();

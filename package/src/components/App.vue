@@ -147,7 +147,7 @@
 				</ElTable>
 			</ElMain>
 			<ElAside class="right">
-				<Box :bound="bound" @box-show="projectNodeToInspectLayer"></Box>
+				<Box :bound="bound" @box-show="projectNodeToInspectLayer" @box-hide="disableNodeToInspectLayer"></Box>
 			</ElAside>
 		</ElContainer>
 	</div>
@@ -155,7 +155,7 @@
 
 <script>
 import Box from './Box.vue';
-import { log, error, warn } from '../utils';
+import { log, error, warn } from '../assets/utils';
 export default {
 	name: "App",
 	mixins: [],
@@ -403,6 +403,11 @@ export default {
 		projectNodeToInspectLayer(uuid = '') {
 			if (uuid && this.isShowInspectLayer) {
 				this.ccdevtool.projectNodeToInspectLayer(uuid);
+			}
+		},
+		disableNodeToInspectLayer(uuid = '') {
+			if (uuid && this.isShowInspectLayer) {
+				this.ccdevtool.disableNodeToInspectLayer(uuid);
 			}
 		}
 	}
