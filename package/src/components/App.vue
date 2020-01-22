@@ -147,159 +147,11 @@
 				</ElTable>
 			</ElMain>
 			<ElAside class="right">
-				<Box :bound="bound" @box-show="convertNodeToInspectLayer"></Box>
+				<Box :bound="bound" @box-show="projectNodeToInspectLayer"></Box>
 			</ElAside>
 		</ElContainer>
 	</div>
 </template>
-<style lang="scss">
-%column {
-	display: flex;
-	flex-direction: column;
-	justify-content: space-between;
-	align-items: center;
-	height: 70px;
-	padding: 10px;
-	box-sizing: border-box;
-	&:hover {
-		cursor: pointer;
-		background-color: #d9ecff;
-	}
-}
-.main {
-	height: 100%;
-	.title {
-		color: #409EFF;
-	}
-	.header {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		height: 70px !important;
-		padding: 0;
-		box-shadow: 0 0 8px rgba(0,0,0,0.15);
-		.title {
-			display: flex;
-			align-items: center;
-			height: 70px;
-			.logo {
-				width: 48px;
-				height: 48px;
-				margin-right: 1em;
-			}
-		}
-		.features {
-			display: flex;
-			padding: 10px 0 10px 10px;
-			.switchs {
-				display: flex;
-			}
-			.switch {
-				@extend %column;
-				span {
-					font-size: 14px;
-				}
-			}
-			.buttons {
-				display: flex;
-				justify-content: center;
-				align-items: center;
-				.btn {
-					.el-tooltip {
-						@extend %column;
-					}
-					span {
-						font-size: 14px;
-					}
-				}
-				i[class^=el-icon-] {
-					font-size: 14px;
-				}
-				.el-button--small.is-circle {
-					padding: 6px;
-				}
-			}
-		}
-	}
-	.container {
-		height: calc(100% - 70px);
-		.left, .right {
-			display: flex;
-			flex-direction: column;
-			padding: 10px 10px 0 10px;
-			.el-input {
-				flex-shrink: 0;
-			}
-			.el-tree {
-				flex-grow: 1;
-				overflow: scroll;
-			}
-		}
-		.left {
-			position: relative;
-			flex-grow: 0;
-			flex-shrink: 0;
-			border-right: 1px solid rgba(0,0,0,0.15);
-			box-sizing: border-box;
-			.loading {
-				font-size: 36px;
-				position: absolute;
-				top: 200px;
-				left: 138px;
-			}
-		}
-		.right {
-			flex: 1;
-		}
-		.main {
-			width: 540px;
-			flex-grow: 0;
-			flex-shrink: 0;
-			border-right: 1px solid rgba(0,0,0,0.15);
-			box-sizing: border-box;
-			overflow: scroll;
-		}
-	}
-	.el-input-number > span[role="button"]:first-child{
-		margin: 1px 0 0 1px;
-	}
-	.el-color-picker__color-inner {
-		top: 1px;
-		left: 1px;
-	}
-	.comp-table {
-		border-collapse: collapse;
-		.inspect-btn {
-			text-align: right;
-		}
-		th, td {
-			padding: 0.5em 1em !important;
-		}
-	}
-	.el-table {
-		margin-bottom: 1em;
-		&::before {
-			display: none;
-		}
-		td {
-			padding: 2px;
-		}
-		th {
-			background-color: #efefef;
-		}
-	}
-	.el-tree-node.is-current {
-		position: relative;
-		&::before {
-			content: "$n0";
-			position: absolute;
-			top: 0.5em;
-			right: 4px;
-			color: #b7b7b7;
-		}
-	}
-}
-</style>
 
 <script>
 import Box from './Box.vue';
@@ -548,11 +400,163 @@ export default {
 		 * @description 在inspect layer上显示节点
 		 * @param {uuid} String 节点的uuid
 		 */
-		convertNodeToInspectLayer(uuid = '') {
+		projectNodeToInspectLayer(uuid = '') {
 			if (uuid && this.isShowInspectLayer) {
-				this.ccdevtool.convertNodeToInspectLayer(uuid);
+				this.ccdevtool.projectNodeToInspectLayer(uuid);
 			}
 		}
 	}
 };
 </script>
+
+<style lang="scss">
+%column {
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+	align-items: center;
+	height: 70px;
+	padding: 10px;
+	box-sizing: border-box;
+	&:hover {
+		cursor: pointer;
+		background-color: #d9ecff;
+	}
+}
+.main {
+	.title {
+		color: #409EFF;
+	}
+	.header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		height: 70px !important;
+		padding: 0;
+		box-shadow: 0 0 8px rgba(0,0,0,0.15);
+		.title {
+			display: flex;
+			align-items: center;
+			height: 70px;
+			.logo {
+				width: 48px;
+				height: 48px;
+				margin-right: 1em;
+			}
+		}
+		.features {
+			display: flex;
+			padding: 10px 0 10px 10px;
+			.switchs {
+				display: flex;
+			}
+			.switch {
+				@extend %column;
+				span {
+					font-size: 14px;
+				}
+			}
+			.buttons {
+				display: flex;
+				justify-content: center;
+				align-items: center;
+				.btn {
+					.el-tooltip {
+						@extend %column;
+					}
+					span {
+						font-size: 14px;
+					}
+				}
+				i[class^=el-icon-] {
+					font-size: 14px;
+				}
+				.el-button--small.is-circle {
+					padding: 6px;
+				}
+			}
+		}
+	}
+	.container {
+		height: calc(100vh - 70px);
+		.left, .right {
+			display: flex;
+			flex-direction: column;
+			height: 100%;
+			padding: 10px 10px 0 10px;
+			.el-input {
+				flex-shrink: 0;
+			}
+			.el-tree {
+				flex-grow: 1;
+				overflow: scroll;
+			}
+		}
+		.left {
+			flex-grow: 0;
+			flex-shrink: 0;
+		}
+		.right {
+			flex-grow: 1;
+		}
+		.left {
+			position: relative;
+			border-right: 1px solid rgba(0,0,0,0.15);
+			box-sizing: border-box;
+			.loading {
+				font-size: 36px;
+				position: absolute;
+				top: 200px;
+				left: 138px;
+			}
+		}
+		.main {
+			width: 540px;
+			height: 100%;
+			flex-grow: 0;
+			flex-shrink: 0;
+			border-right: 1px solid rgba(0,0,0,0.15);
+			box-sizing: border-box;
+			overflow: scroll;
+		}
+	}
+	.el-input-number > span[role="button"]:first-child{
+		margin: 1px 0 0 1px;
+	}
+	.el-color-picker__color-inner {
+		top: 1px;
+		left: 1px;
+	}
+	.comp-table {
+		border-collapse: collapse;
+		.inspect-btn {
+			text-align: right;
+		}
+		th, td {
+			padding: 0.5em 1em !important;
+		}
+	}
+	.el-table {
+		margin-bottom: 1em;
+		&::before {
+			display: none;
+		}
+		td {
+			padding: 2px;
+		}
+		th {
+			background-color: #efefef;
+		}
+	}
+	.el-tree-node.is-current {
+		position: relative;
+		&::before {
+			content: "$n0";
+			position: absolute;
+			top: 0.5em;
+			right: 4px;
+			color: #b7b7b7;
+		}
+	}
+}
+</style>

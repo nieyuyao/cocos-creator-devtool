@@ -287,10 +287,7 @@ function typeOf(val) {
 	};
 }
 function initCCDevtool() {
-	const ccCanvas = document.getElementById('GameCanvas');
 	const ccdevtool = (window.ccdevtool = {
-		ccWidth: ccCanvas.width,
-		ccHeight: ccCanvas.height,
 		nodeId: 1,
 		stats: null,
 		/**
@@ -366,13 +363,24 @@ function initCCDevtool() {
 			}
 			this.toggleElement(`#${InspectLayerInfo.id}`, true);
 		},
+		calcCCSize() {
+			if (!this.ccHeight || !this.ccWidth) {
+				const ccCanvas = document.getElementById('GameCanvas');
+				if (ccCanvas && ccCanvas.height) {
+					this.ccHeight = ccCanvas.height;
+					this.ccWidth = ccCanvas.width;
+				}
+			}
+		},
 		/**
 		 * @description Create inspect layer
 		 */
 		createInspectLayer() {
+			const ccCanvas = document.getElementById('GameCanvas');
+			this.calcCCSize();
 			const inspectLayer = document.createElement('canvas');
-			inspectLayer.width = this.width;
-			inspectLayer.height = this.height;
+			inspectLayer.width = ccCanvas.width;
+			inspectLayer.height = ccCanvas.height;
 			const {
 				x: bx,
 				y: by
@@ -397,18 +405,18 @@ function initCCDevtool() {
 		 * @description 在inspect layer上显示节点
 		 * @param {uuid} String 节点的uuid
 		 */
-		convertNodeToInspectLayer(uuid) {
+		projectNodeToInspectLayer(uuid) {
 			const { id, color } = InspectLayerInfo;
 			const inspectLayer = document.getElementById(id);
 			const ctx = inspectLayer.getContext('2d');
 			const node = NodesCacheData[uuid];
 			if (node) {
-				const { globalBound } = node.bound;
-				const { x, y, width, height } = globalBound;
+				const screenBound = node.screenBound;
+				const { x, y, width, height } = screenBound;
 				ctx.clearRect(0, 0, inspectLayer.width, inspectLayer.height);
 				// 坐标转换
 				ctx.fillStyle = color;
-				ctx.rect(x, y, width, height);
+				ctx.rect(x - width / 2, y - height / 2, width, height);
 			}
 		},
 		disableNodeToInspectLayer() {
@@ -545,7 +553,9 @@ function initCCDevtool() {
 			const nodeInfo = NodesCacheData[uuid];
 			if (!node || !nodeInfo) return;
 			const prop = nodeInfo.props.find(p => p.key === key);
-			if (prop) prop.value = value;
+			if (prop) {
+				prop.value = value;
+			}
 			if (key === "color") {
 				let comp = hexToRgb(value);
 				if (comp) {
@@ -601,6 +611,8 @@ function initCCDevtool() {
 			bound.globalBound = {};
 			bound.screenBound = {};
 			if (node.parent) {
+				bound.width = node.width;
+				bound.height = node.height;
 				const globalBound = node.getBoundingBoxToWorld();
 				const localBound = node.getBoundingBox();
 				//
@@ -610,8 +622,6 @@ function initCCDevtool() {
 				} = node;
 				bound.globalBound.x = globalBound.xMin * (1 - anchorX) + globalBound.xMax * anchorX;
 				bound.globalBound.y = globalBound.yMin * (1 - anchorY) + globalBound.yMax * anchorY;
-				bound.globalBound.width = node.width;
-				bound.globalBound.height = node.height;
 				const {
 					anchorX: pAnchorX,
 					anchorY: pAnchorY,
@@ -619,12 +629,13 @@ function initCCDevtool() {
 					height: pH
 				} = node.parent;
 				//
-				bound.localBound.width = localBound.width;
-				bound.localBound.height = localBound.height;
 				bound.localBound.top = (1 - pAnchorY) * pH - (localBound.yMin + localBound.height);
 				bound.localBound.bottom = localBound.yMin + pAnchorY * pH;
 				bound.localBound.left = localBound.xMin + pAnchorX * pW;
 				bound.localBound.right = (1 - pAnchorX) * pW - (localBound.xMin + localBound.width);
+				// TODO:如何计算相对于屏幕的坐标
+				this.calcCCSize();
+				const { ccWidth, ccHeight } = this;
 			}
 			/**
 			 * Cache node in some place other than NodesCacheData

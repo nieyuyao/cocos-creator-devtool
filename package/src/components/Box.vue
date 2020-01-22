@@ -6,8 +6,8 @@
             <div 
                 class="bounding"
                 :class="{'bounding-hover': boundingHover, 'content-hover': wrapperHover}"
-                @mouseover="handleGlobalBoundingMouseEnter"
-                @mouseout="handleGlobalBoundingMouseLeave"
+                @mouseover="mouseOver('global', 'bounding')"
+                @mouseout="mouseOut('global', 'bounding')"
             >
                 <!-- 坐标轴 -->
                 <div class="axis-x"></div>
@@ -16,8 +16,8 @@
                 <div class="wrapper">
                     <div
                         class="content"
-                        @mouseover.stop="handleGlobalContentMouseEnter"
-                        @mouseout.stop="handleGlobalContentMouseLeave"
+                        @mouseover.stop="mouseOver('global', 'wrapper')"
+                        @mouseout.stop="mouseOut('global', 'wrapper')"
                     >
                         <span>{{contentWidth}}×{{contentHeight}}</span>
                         <div class="place">
@@ -28,8 +28,26 @@
                 </div>
             </div>
         </div>
+        <div class="divide"></div>
         <!-- 屏幕坐标 -->
-        <div class="Screen"></div>
+        <div class="screen">
+            <h3 class="title">Screen</h3>
+            <div
+                class="parent"
+                @mouseover="mouseOver('screen', 'parent')"
+                @mouseout="mouseOut('screen', 'parent')"
+            >
+                <div class="place-top">{{screenTop}}</div>
+                <div class="place-left">{{screenLeft}}</div>
+                <div
+                    class="child"
+                    @mouseover.stop="mouseOver('screen', 'child')"
+                    @mouseout.stop="mouseOut('screen', 'child')"
+                >
+                    <span>{{contentWidth}}×{{contentHeight}}</span>
+                </div>
+            </div>
+        </div>
         <div class="divide"></div>
         <!-- 局部坐标 -->
         <div class="local">
@@ -37,8 +55,8 @@
             <div
                 class="parent"
                 :class="{'parent-hover': parentHover, 'child-hover': childHover}"
-                @mouseover="handleLocalParentMouseEnter"
-                @mouseout="handleLocalParentMouseLeave"
+                @mouseover="mouseOver('local', 'parent')"
+                @mouseout="mouseOut('local', 'parent')"
             >
                 <div class="place-top">{{localTop}}</div>
                 <div class="place-bottom">{{localBottom}}</div>
@@ -46,8 +64,8 @@
                 <div class="place-right">{{localRight}}</div>
                 <div
                     class="child"
-                    @mouseover.stop="handleLocalChildMouseEnter"
-                    @mouseout.stop="handleLocalChildMouseLeave"
+                    @mouseover.stop="mouseOver('local', 'child')"
+                    @mouseout.stop="mouseOut('local', 'child')"
                 >
                     <span>{{contentWidth}}×{{contentHeight}}</span>
                 </div>
@@ -63,7 +81,7 @@
     .bounding {
         position: relative;
         width: 200px;
-        height: 200px;
+        height: 140px;
         margin: 40px 0 40px 40px;
         border: 1px dashed black;
         background-color:#f3cea5;
@@ -103,7 +121,7 @@
         top: 50%;
         left: 50%;
         width: 0px;
-        height: 240px;
+        height: 180px;
         border-left: 1px dotted black;
         transform: translate(-50%, -50%);
         &::after {
@@ -136,7 +154,7 @@
                 top: 50%;
                 left: 50%;
                 width: 55px;
-                height: 80px;
+                height: 50px;
                 border-top: 1px solid red;
                 border-left: 1px solid red;
                 color: red;
@@ -160,14 +178,14 @@
     height: 1px;
     background-color: #909399;
 }
-.local {
+.local, .screen {
     .parent {
         position: relative;
         display: flex;
         justify-content: center;
         align-items: center;
         width: 200px;
-        height: 200px;
+        height: 140px;
         margin: 40px 0 40px 40px;
         border: 1px dashed black;
         background-color:#f3cea5;
@@ -224,105 +242,111 @@ export default {
     },
     data() {
         return {
-            wrapperHover: false,
-            boundingHover: false,
-            parentHover: false,
-            childHover: false
+            // 控制全局盒子的显示
+            boundingHover: false, // mouse是否浮动在boundingt元素上方
+            wrapperHover: false, // mouse是否浮动在content元素上方
+            // 控制局部盒子的显示
+            parentHover: false, // mouse是否浮动在parent元素上方
+            childHover: false, // mouse是否浮动在child元素上方
+            // 控制屏幕盒子的显示
+            screenParentHover: false, // mouse是否浮动在parent元素上方
+            screenChildHover: false // mouse是否浮动在child元素上方
         }
     },
     computed: {
         globalX() {
             const { globalBound } = this.bound;
-            if (globalBound && typeof globalBound.x === 'number') {
-                return Math.round(globalBound.x);
-            }
-            return '-';
+            return globalBound && typeof globalBound.x === 'number' ? Math.round(globalBound.x) : '-';
         },
         globalY() {
             const { globalBound } = this.bound;
-            if (globalBound && typeof globalBound.y === 'number') {
-                return  Math.round(globalBound.y);
-            }
-            return '-';
+            return globalBound && typeof globalBound.y === 'number' ? Math.round(globalBound.y) : '-';
         },
         localTop() {
             const { localBound } = this.bound;
-            if (localBound && typeof localBound.top === 'number') {
-                return  Math.round(localBound.top);
-            }
-            return '-';
+            return localBound && typeof localBound.top === 'number' ? Math.round(localBound.top) : '-';
         },
         localBottom() {
             const { localBound } = this.bound;
-            if (localBound && typeof localBound.bottom === 'number') {
-                return  Math.round(localBound.bottom);
-            }
-            return '-';
+            return localBound && typeof localBound.bottom === 'number' ? Math.round(localBound.bottom) : '-';
         },
         localLeft() {
             const { localBound } = this.bound;
-            if (localBound && typeof localBound.left === 'number') {
-                return  Math.round(localBound.left);
-            }
-            return '-';
+            return localBound && typeof localBound.left === 'number' ? Math.round(localBound.left) : '-';
         },
         localRight() {
             const { localBound } = this.bound;
-            if (localBound && typeof localBound.right === 'number') {
-                return Math.round(localBound.right);
-            }
-            return '-';
+            return localBound && typeof localBound.right === 'number' ?  Math.round(localBound.right) : '-';
         },
         contentWidth() {
-            const { globalBound, localBound } = this.bound;
-            if (globalBound && typeof globalBound.width === 'number') {
-                return Math.round(globalBound.width);
-            }
-            else if (localBound && typeof localBound.widt === 'number') {
-                return Math.round(localBound.width);
-            }
-            return '-';
+            const width = this.bound.width;
+            return width ? Math.round(width) : '-';
         },
         contentHeight() {
-            const { globalBound, localBound } = this.bound;
-            if (globalBound && typeof globalBound.height === 'number') {
-                return Math.round(globalBound.height);
-            }
-            else if (localBound && typeof localBound.height === 'number') {
-                return Math.round(localBound.height);
-            }
-            return '-';
+            const height = this.bound.height;
+            return height ? Math.round(height) : '-';
+        },
+        screenTop() {
+            const { screenBound } = this.bound;
+            return screenBound && typeof screenBound.top === 'number' ?  Math.round(screenBound.top) : '-';
+        },
+        screenLeft() {
+            const { screenBound } = this.bound;
+            return screenBound && typeof screenBound.left === 'number' ?  Math.round(screenBound.left) : '-';
         }
     },
     methods: {
-        handleGlobalBoundingMouseEnter(event) {
-            this.boundingHover = true;
+        mouseOver(type, node) {
+            const sign = `${type}-${node}`;
+            const uuid = this.bound.uuid;
+            switch (sign) {
+                case 'global-bounding':
+                    this.boundingHover = true;
+                    break;
+                case 'global-wrapper':
+                    this.wrapperHover = true;
+                    this.$emit('box-show', uuid);
+                    break;
+                case 'local-parent':
+                    this.parentHover = true;
+                    break;
+                case 'local-child':
+                    this.childHover = true;
+                    this.$emit('box-show', uuid);
+                case 'screen-parent':
+                    this.screenParentHover = true;
+                    break;
+                case 'screen-child':
+                    this.screenChildHover = true;
+                    this.$emit('box-show', uuid);
+                    break;
+            }
         },
-        handleGlobalBoundingMouseLeave() {
-            this.boundingHover = false;
-        },
-        handleGlobalContentMouseEnter() {
-            this.wrapperHover = true;
-            //
-            this.$emit('box-show', bound.uuid);
-        },
-        handleGlobalContentMouseLeave() {
-            this.wrapperHover = false;
-            this.$emit('box-hide', bound.uuid);
-        },
-        handleLocalParentMouseEnter() {
-            this.parentHover = true;
-        },
-        handleLocalParentMouseLeave() {
-            this.parentHover = false;
-        },
-        handleLocalChildMouseEnter() {
-            this.childHover = true;
-            //
-            this.$emit('box-show', bound.uuid);
-        },
-        handleLocalChildMouseLeave() {
-            this.childHover = false;
+        mouseOut(type, node) {
+            const sign = `${type}-${node}`;
+            const uuid = this.bound.uuid;
+            switch (sign) {
+                case 'global-bounding':
+                    this.boundingHover = false;
+                    break;
+                case 'global-wrapper':
+                    this.wrapperHover = false;
+                    this.$emit('box-hide', uuid);
+                    break;
+                case 'local-parent':
+                    this.parentHover = false;
+                    break;
+                case 'local-child':
+                    this.childHover = false;
+                    this.$emit('box-hide', uuid);
+                case 'screen-parent':
+                    this.screenParentHover = false;
+                    break;
+                case 'screen-child':
+                    this.screenChildHover = false;
+                    this.$emit('box-hide', uuid);
+                    break;
+            }
         }
     }
 }
