@@ -117,23 +117,57 @@ function initCCDevtool() {
 		},
 		/**
 		 * globalPosition => glPosition => screenPostion
-		 * @description 节点的全局坐标
-		 * @param {cc.Vec2} globalPosition 节点的全局坐标
-		 * @returns {cc.Vec2} 节点的屏幕坐标
+		 * @description 根据节点在Canvas节点中的坐标转换至屏幕坐标
+		 * @param {cc.Node} node 节点
 		 */
-		convertToScreenPosition(globalPosition) {
-			if (!globalPosition instanceof cc.Vec2) {
-				throw new TypeError('position is not cc.Vec2');
+		getScreenPosition(node) {
+			const worldPosition = node.convertToWorldSpaceAR();
+			// 左上角
+			// TODO:如果锚点不在中间的
+			const leftTop = this.convertWorldToScreen(new cc.Vec2(
+				worldPosition.x - node.width / 2,
+				worldPosition.y + node.height / 2
+			));
+			// 右上角
+			const rightTop = this.convertWorldToScreen(new cc.Vec2(
+				worldPosition.x + node.width / 2,
+				worldPosition.y + node.height / 2
+			));
+			// 左下角
+			const leftBottom = this.convertWorldToScreen(new cc.Vec2(
+				worldPosition.x - node.width / 2,
+				worldPosition.y - node.height / 2
+			));
+			// 右下角
+			const rightBottom = this.convertWorldToScreen(new cc.Vec2(
+				worldPosition.x + node.width / 2,
+				worldPosition.y - node.height / 2
+			));
+			// new cc.Vec2(globalPosition.x - this.canvasWidth / 2, globalPosition.y - this.canvasHeight / 2)
+			return {
+				worldPosition,
+				leftTop,
+				rightTop,
+				leftBottom,
+				rightBottom
 			}
-			const { x: px, y: py } = globalPosition;
+		},
+		/**
+		 * glPosition => screenPostion
+		 * @description 节点的gl坐标转化为全局屏幕坐标
+		 * @param {cc.Vec2} vec2 节点相对于canvas节点坐标 [中心为坐标原点]
+		 */
+		convertWorldToScreen(vec2) {
+			const { width: canvasNodeWidth, height: canvasNodeHeight } = this.canvasNode;
 			const { canvasWidth, canvasHeight } = this;
-			const { width: viewWidth, height: viewHeight, anchorX, anchorY } = this.canvasNode;
-			const glX = (px - (0.5 - anchorX) * viewWidth/ 2) / (viewWidth / 2);
-			const glY = (py - (0.5 - anchorY) * viewHeight  / 2) / (viewHeight / 2);
+			const x = vec2.x - canvasNodeWidth / 2;
+			const y = vec2.y - canvasNodeHeight / 2;
+			const glX = x / (canvasNodeWidth / 2);
+			const glY = y / (canvasNodeHeight / 2);
 			return new cc.Vec2(
-				(0.5 + glX) * canvasWidth,
-				(0.5 - glY) * canvasHeight
-			)
+				(1 + glX) * canvasWidth / 2,
+				(1 - glY) * canvasHeight / 2
+			);
 		},
 		/**
 		 * @description 在inspect layer上显示节点
@@ -146,14 +180,24 @@ function initCCDevtool() {
 			const node = NodesCacheData[uuid];
 			if (node) {
 				const screenBound = node.bound.screenBound;
-				const { x, y, width, height } = screenBound;
 				ctx.clearRect(0, 0, inspectLayer.width, inspectLayer.height);
-				// 坐标转换
+				const { leftTop, rightTop, leftBottom, rightBottom } = screenBound;
+				ctx.beginPath();
+				ctx.moveTo(leftTop.x, leftTop.y);
+				ctx.lineTo(rightTop.x, rightTop.y);
+				ctx.lineTo(rightBottom.x, rightBottom.y);
+				ctx.lineTo(leftBottom.x, leftBottom.y);
+				ctx.closePath();
 				ctx.fillStyle = color;
-				ctx.rect(x - width / 2, y - height / 2, width, height);
+				ctx.fill();
+				// // 坐标转换
+				// ctx.fillStyle = color;
+				// ctx.rect(left - width / 2, top - height / 2, width, height);
+				// ctx.fill();
 			}
 		},
 		disableNodeToInspectLayer() {
+			const id = InspectLayerInfo.id;
 			const inspectLayer = document.getElementById(id);
 			const ctx = inspectLayer.getContext('2d');
 			ctx.clearRect(0, 0, inspectLayer.width, inspectLayer.height);
@@ -176,9 +220,11 @@ function initCCDevtool() {
 				this.createStatsPanel();
 			}
 			this.toggleElement(`#${StatsLayerId}`, true);
-			cc.director.on(cc.Director.EVENT_BEFORE_UPDATE, this.beforeUpdate, this);
-			cc.director.on(cc.Director.EVENT_AFTER_VISIT, this.afterVisit, this);
-			cc.director.on(cc.Director.EVENT_AFTER_DRAW, this.afterDraw, this);
+			if (this.stats) {
+				cc.director.on(cc.Director.EVENT_BEFORE_UPDATE, this.beforeUpdate, this);
+				cc.director.on(cc.Director.EVENT_AFTER_VISIT, this.afterVisit, this);
+				cc.director.on(cc.Director.EVENT_AFTER_DRAW, this.afterDraw, this);
+			}
 		},
 		/**
 		 * @description Create stats panel
@@ -347,10 +393,11 @@ function initCCDevtool() {
 			if (node.parent) {
 				bound.width = node.width;
 				bound.height = node.height;
+				// 全局坐标
 				const globalPosition = node.convertToWorldSpaceAR();
 				bound.globalBound.x = globalPosition.x;
 				bound.globalBound.y = globalPosition.y;
-				//
+				// 局部坐标
 				const localBound = node.getBoundingBox();
 				const {
 					anchorX: pAnchorX,
@@ -362,10 +409,8 @@ function initCCDevtool() {
 				bound.localBound.bottom = localBound.yMin + pAnchorY * pH;
 				bound.localBound.left = localBound.xMin + pAnchorX * pW;
 				bound.localBound.right = (1 - pAnchorX) * pW - (localBound.xMin + localBound.width);
-				//
-				const screenPosition = this.convertToScreenPosition(globalPosition);
-				bound.screenBound.left = screenPosition.x;
-				bound.screenBound.top = screenPosition.y;
+				// 屏幕坐标
+				bound.screenBound = this.getScreenPosition(node);
 			}
 			/**
 			 * Cache node in some place other than NodesCacheData

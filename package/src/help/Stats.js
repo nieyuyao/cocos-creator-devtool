@@ -1,11 +1,11 @@
-import { StatsStyleText } from '../assets/constants';
+import { StatsStyleText, StatsLayerId } from '../assets/constants';
 
 /**
  * @description 控制游戏参数面板显示的类
  * @param {Number} average 每隔多长时间刷新一次统计面板
  * @param {Object} statsInfo 需要统计的信息
  */
-export class Stats {
+export default class Stats {
 	constructor(average, statsInfo) {
 		this.statsInfo = statsInfo;
 		this.average = average;

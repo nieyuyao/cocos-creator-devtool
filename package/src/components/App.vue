@@ -256,7 +256,7 @@ export default {
 						err ? reject(err) : resolve(res);
 					});
 				} catch (e) {
-					error(e);
+					error(code, e);
 					reject(e);
 				}
 			});

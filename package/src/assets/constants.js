@@ -132,6 +132,6 @@ export const StatsStyleText = `
 `;
 export const InspectLayerInfo = {
 	id: 'cc-devtool-inspect-layer',
-	color: 'rgba(0, 126, 255, 0.6)'
+	color: 'rgba(0, 126, 255, 0.2)'
 }
 export const StatsLayerId = 'fps';
