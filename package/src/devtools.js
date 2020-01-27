@@ -63,14 +63,14 @@ function initApp() {
 }
 
 function inject() {
-    // initApp();
-    injectScript(initApp);
+    initApp();
+    // injectScript(initApp);
 }
 
-chrome.devtools.network.onNavigated.addListener(() => {
-    app.$destroy();
-    inject();
-});
+// chrome.devtools.network.onNavigated.addListener(() => {
+//     app.$destroy();
+//     inject();
+// });
 
 //
 inject();

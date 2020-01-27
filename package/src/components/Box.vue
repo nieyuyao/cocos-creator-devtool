@@ -20,10 +20,10 @@
                         @mouseleave.stop="mouseLeave('global', 'content')"
                     >
                         <span>{{contentWidth}}×{{contentHeight}}</span>
-                        <div class="place">
-                            <div class="place-x">{{globalX}}</div>
-                            <div class="place-y">{{globalY}}</div>
-                        </div>
+                    </div>
+                    <div class="place">
+                        <div class="place-x">{{globalX}}</div>
+                        <div class="place-y">{{globalY}}</div>
                     </div>
                 </div>
             </div>
@@ -82,7 +82,7 @@
     }
     .axis-x {
         position: absolute;
-        top: 50%;
+        top: 100%;
         left: 50%;
         width: 240px;
         height: 0px;
@@ -100,7 +100,7 @@
     .axis-y {
         position: absolute;
         top: 50%;
-        left: 50%;
+        left: 0%;
         width: 0px;
         height: 180px;
         border-left: 1px dotted black;
@@ -116,10 +116,11 @@
     }
     .wrapper {
         position: absolute;
-        top: 10px;
-        left: 20px;
-        width: 50px;
-        height: 20px;
+        top: 50%;
+        left: 50%;
+        width: 100px;
+        height: 40px;
+        transform: translate(-50%, -50%);
         .content {
             position: absolute;
             top: 50%;
@@ -130,30 +131,30 @@
             transform: translate(-50%, -50%);
             background-color: #a8c5e5;
             transition: background-color 0.2s 0s linear;
-            .place {
-                display: none;
-                position: absolute;
-                top: 50%;
-                left: 50%;
-                width: 55px;
-                height: 50px;
-                border-top: 1px solid red;
-                border-left: 1px solid red;
-                color: red;
-                font-size: 8px;
-                pointer-events: none;
-            }
-            .place-x {
-                position: absolute;
-                right: 4px;
-                text-align: right;
-            }
-            .place-y {
-                position: absolute;
-                left: 4px;
-                bottom: 4px;
-                text-align: left;
-            }
+        }
+        .place {
+            display: none;
+            position: absolute;
+            top: 50%;
+            right: 50%;
+            width: 100px;
+            height: 70px;
+            border-top: 1px solid red;
+            border-right: 1px solid red;
+            color: red;
+            font-size: 8px;
+            pointer-events: none;
+        }
+        .place-x {
+            position: absolute;
+            left: 4px;
+            text-align: right;
+        }
+        .place-y {
+            position: absolute;
+            right: 4px;
+            bottom: 4px;
+            text-align: left;
         }
     }
 }
@@ -265,11 +266,11 @@ export default {
         },
         contentWidth() {
             const width = this.bound.width;
-            return width ? Math.round(width) : '-';
+            return typeof width === 'number' ? Math.round(width) : '-';
         },
         contentHeight() {
             const height = this.bound.height;
-            return height ? Math.round(height) : '-';
+            return typeof height === 'number' ? Math.round(height) : '-';
         }
     },
     methods: {
