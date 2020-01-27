@@ -4,7 +4,11 @@ import Stats from './help/Stats';
 const NodesCache = {}; // Node cache which contains cc.Node refs 保存的是节点
 const NodesCacheData = {}; // Node data cache 序列化后的节点信息
 function initCCDevtool() {
-	const ccdevtool = (window.ccdevtool = {
+	let canvasWidth = 0;
+	let canvasHeight = 0;
+	let canvasNodeWidth = 0;
+	let canvasNodeHeight = 0;
+	const ccdevtool = {
 		nodeId: 1,
 		stats: null,
 		/**
@@ -19,14 +23,15 @@ function initCCDevtool() {
 			try {
 				if (scene) {
 					const size = cc.view.getCanvasSize();
-					this.canvasWidth = size.width;
-					this.canvasHeight = size.height;
+					canvasWidth = size.width;
+					canvasHeight = size.height;
 					if (!scene.name) {
 						scene.name = "Scene";
 					}
 					// 获取场景中的第一个节点 => Canvas节点
 					if (scene.children[0]) {
-						this.canvasNode = scene.children[0];
+						canvasNodeWidth = scene.children[0].width;
+						canvasNodeHeight = scene.children[0].height;
 					}
 					ret = this.serialize(scene, true);
 				}
@@ -121,29 +126,28 @@ function initCCDevtool() {
 		 * @param {cc.Node} node 节点
 		 */
 		getScreenPosition(node) {
+			const { anchorX, anchorY } = node; 
 			const worldPosition = node.convertToWorldSpaceAR();
 			// 左上角
-			// TODO:如果锚点不在中间的
 			const leftTop = this.convertWorldToScreen(new cc.Vec2(
-				worldPosition.x - node.width / 2,
-				worldPosition.y + node.height / 2
+				worldPosition.x - node.width * anchorX,
+				worldPosition.y + node.height * anchorY
 			));
 			// 右上角
 			const rightTop = this.convertWorldToScreen(new cc.Vec2(
-				worldPosition.x + node.width / 2,
-				worldPosition.y + node.height / 2
+				worldPosition.x + node.width * anchorX,
+				worldPosition.y + node.height * anchorY
 			));
 			// 左下角
 			const leftBottom = this.convertWorldToScreen(new cc.Vec2(
-				worldPosition.x - node.width / 2,
-				worldPosition.y - node.height / 2
+				worldPosition.x - node.width * anchorX,
+				worldPosition.y - node.height * anchorY
 			));
 			// 右下角
 			const rightBottom = this.convertWorldToScreen(new cc.Vec2(
-				worldPosition.x + node.width / 2,
-				worldPosition.y - node.height / 2
+				worldPosition.x + node.width * anchorX,
+				worldPosition.y - node.height * anchorY
 			));
-			// new cc.Vec2(globalPosition.x - this.canvasWidth / 2, globalPosition.y - this.canvasHeight / 2)
 			return {
 				worldPosition,
 				leftTop,
@@ -158,8 +162,6 @@ function initCCDevtool() {
 		 * @param {cc.Vec2} vec2 节点相对于canvas节点坐标 [中心为坐标原点]
 		 */
 		convertWorldToScreen(vec2) {
-			const { width: canvasNodeWidth, height: canvasNodeHeight } = this.canvasNode;
-			const { canvasWidth, canvasHeight } = this;
 			const x = vec2.x - canvasNodeWidth / 2;
 			const y = vec2.y - canvasNodeHeight / 2;
 			const glX = x / (canvasNodeWidth / 2);
@@ -429,7 +431,8 @@ function initCCDevtool() {
 			});
 			return ret;
 		}
-	});
+	};
+	window.ccdevtool = ccdevtool;
 	/**
 	 * Hijack cc.director.loadScene()
 	 * when loadScene is called, notify cc-devtool panel to refresh node tree
