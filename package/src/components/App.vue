@@ -12,13 +12,13 @@
 					<div class="switch">
 						<ElSwitch v-model="isShowStats"></ElSwitch>
 						<ElTooltip effect="dark" content="Show Stats/显示游戏参数" placement="bottom">
-							<span>Stats</span>
+							<span class="text-tip">Stats</span>
 						</ElTooltip>
 					</div>
 					<div class="switch">
-						<ElSwitch v-model="isShowInspectLayer"></ElSwitch>
+						<ElSwitch v-model="isShowInspectLayer" active-color="#13ce66"></ElSwitch>
 						<ElTooltip effect="dark" content="Show Inspect Layer/显示调试层" placement="bottom">
-							<span>Inspect</span>
+							<span class="text-tip">Inspect</span>
 						</ElTooltip>
 					</div>
 				</div>
@@ -28,7 +28,7 @@
 						<ElTooltip effect="dark" content="重新加载场景" placement="bottom">
 							<div>
 								<ElButton type="primary" icon="el-icon-refresh-right" size="small" circle></ElButton>
-								<span>Reload Scene</span>
+								<span class="text-tip">Reload Scene</span>
 							</div>
 						</ElTooltip>
 					</div>
@@ -37,7 +37,7 @@
 						<ElTooltip effect="dark" content="重新加载插件" placement="bottom">
 							<div>
 								<ElButton type="primary" icon="el-icon-files" size="small" circle></ElButton>
-								<span>Reload Extension</span>
+								<span class="text-tip">Reload Extension</span>
 							</div>
 							
 						</ElTooltip>
@@ -66,7 +66,7 @@
 				></ElTree>
 				
 			</ElAside>
-			<ElMain class="main">
+			<ElMain class="middle">
 				<ElButton @click="printNode" type="primary" icon="el-icon-view" size="mini" round>Print</ElButton>
 				<h3 class="title">Components</h3>
 				<div v-if="nodeComps">
@@ -439,11 +439,14 @@ export default {
 		height: 70px !important;
 		padding: 0;
 		box-shadow: 0 0 8px rgba(0,0,0,0.15);
+		font-size: 12px;
+		text-align: center;
 		.title {
 			display: flex;
 			align-items: center;
 			height: 70px;
 			.logo {
+				flex-shrink: 0;
 				width: 48px;
 				height: 48px;
 				margin-right: 1em;
@@ -457,9 +460,6 @@ export default {
 			}
 			.switch {
 				@extend %column;
-				span {
-					font-size: 14px;
-				}
 			}
 			.buttons {
 				display: flex;
@@ -468,9 +468,6 @@ export default {
 				.btn {
 					.el-tooltip {
 						@extend %column;
-					}
-					span {
-						font-size: 14px;
 					}
 				}
 				i[class^=el-icon-] {
@@ -503,6 +500,7 @@ export default {
 		}
 		.right {
 			flex-grow: 1;
+			flex-shrink: 1;
 		}
 		.left {
 			position: relative;
@@ -515,7 +513,7 @@ export default {
 				left: 138px;
 			}
 		}
-		.main {
+		.middle {
 			width: 540px;
 			height: 100%;
 			flex-grow: 0;
@@ -563,5 +561,44 @@ export default {
 			color: #b7b7b7;
 		}
 	}
+}
+@media screen and (max-width: 460px){
+	.main {
+		.header {
+			.title > a {
+				display: none;
+			}
+			.text-tip {
+				display: none;
+			}
+			.switch {
+				justify-content: center !important;
+			}
+			.btn .el-tooltip {
+				justify-content: center !important;
+			}
+		}
+		.container {
+			.left {
+				flex-grow: 1;
+			}
+			.middle, .right {
+				display: none;
+			}
+		}
+	}
+}
+@media screen and (max-width: 840px) {
+	.main {
+		.container {
+			.middle {
+				flex-shrink: 1;
+			}
+			.right {
+				display: none;
+			}
+		}
+	}
+	
 }
 </style>

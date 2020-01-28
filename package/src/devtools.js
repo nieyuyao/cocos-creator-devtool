@@ -32,7 +32,7 @@ Vue.use(ElTableColumn, { locale });
 Vue.use(ElInputNumber, { locale });
 Vue.use(ElColorPicker, { locale });
 
-const app = new Vue({
+let app = new Vue({
     render: (h) => h(AppConnecting)
 }).$mount('#app');
 
@@ -57,20 +57,20 @@ function injectScript(cb) {
 }
 
 function initApp() {
-    new Vue({
+    app = new Vue({
         extends: App
     }).$mount('#app');
 }
 
 function inject() {
-    // initApp();
-    injectScript(initApp);
+    initApp();
+    // injectScript(initApp);
 }
 
-chrome.devtools.network.onNavigated.addListener(() => {
-    app.$destroy();
-    inject();
-});
+// chrome.devtools.network.onNavigated.addListener(() => {
+//     app.$destroy();
+//     inject();
+// });
 
 //
 inject();
