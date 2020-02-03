@@ -131,12 +131,12 @@ function initCCDevtool() {
 			// 左上角
 			const leftTop = this.convertWorldToScreen(new cc.Vec2(
 				worldPosition.x - node.width * anchorX,
-				worldPosition.y + node.height * anchorY
+				worldPosition.y + node.height * (1 - anchorY)
 			));
 			// 右上角
 			const rightTop = this.convertWorldToScreen(new cc.Vec2(
-				worldPosition.x + node.width * anchorX,
-				worldPosition.y + node.height * anchorY
+				worldPosition.x + node.width * (1 - anchorX),
+				worldPosition.y + node.height * (1 - anchorY)
 			));
 			// 左下角
 			const leftBottom = this.convertWorldToScreen(new cc.Vec2(
@@ -145,7 +145,7 @@ function initCCDevtool() {
 			));
 			// 右下角
 			const rightBottom = this.convertWorldToScreen(new cc.Vec2(
-				worldPosition.x + node.width * anchorX,
+				worldPosition.x + node.width * (1 - anchorX),
 				worldPosition.y - node.height * anchorY
 			));
 			return {

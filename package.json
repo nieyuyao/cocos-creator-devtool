@@ -4,7 +4,8 @@
   "license": "MIT",
   "scripts": {
     "dev": "webpack-dev-server",
-    "build": "rm -rf dist && webpack --mode production -p --progress"
+    "build": "rm -rf dist && webpack --mode production -p --progress",
+    "zip": "rm -rf zip && mkdir zip && zip -r -9 ./zip/cc-devtool.zip ./dist "
   },
   "babel": {
     "presets": [

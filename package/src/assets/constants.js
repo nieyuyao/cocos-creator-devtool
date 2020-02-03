@@ -132,7 +132,7 @@ export const StatsStyleText = `
 `;
 export const InspectLayerInfo = {
 	id: 'cc-devtool-inspect-layer',
-    color: 'rgba(0, 126, 255, 0.2)',
+    color: 'rgba(0, 126, 255, 0.4)',
     textColor: 'rgba(255, 255, 255, 1)',
     textFont: 'normal bold 36px sans-serif'
 }
