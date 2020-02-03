@@ -176,7 +176,7 @@ function initCCDevtool() {
 		 * @param {uuid} String 节点的uuid
 		 */
 		projectNodeToInspectLayer(uuid) {
-			const { id, color } = InspectLayerInfo;
+			const { id, color, textColor, textFont } = InspectLayerInfo;
 			const inspectLayer = document.getElementById(id);
 			const ctx = inspectLayer.getContext('2d');
 			const node = NodesCacheData[uuid];
@@ -192,10 +192,11 @@ function initCCDevtool() {
 				ctx.closePath();
 				ctx.fillStyle = color;
 				ctx.fill();
-				// // 坐标转换
-				// ctx.fillStyle = color;
-				// ctx.rect(left - width / 2, top - height / 2, width, height);
-				// ctx.fill();
+				ctx.fillStyle = textColor;
+				ctx.font = textFont;
+				ctx.textAlign = 'center';
+				ctx.textBaseline = 'middle';
+				ctx.fillText(node.name, (leftTop.x + rightTop.x) / 2, (leftTop.y + leftBottom.y) / 2);
 			}
 		},
 		disableNodeToInspectLayer() {
@@ -421,6 +422,7 @@ function initCCDevtool() {
 			NodesCache[node.uuid] = node;
 			bound.uuid = node.uuid;
 			const ret = (NodesCacheData[node.uuid] = {
+				name: node.name || 'Anonymous',
 				id: this.nodeId++,
 				uuid: node.uuid,
 				label: node.name,
