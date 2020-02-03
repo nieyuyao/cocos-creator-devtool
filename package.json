@@ -4,9 +4,7 @@
   "license": "MIT",
   "scripts": {
     "dev": "webpack-dev-server",
-    "clean": "rm -rf dist",
-    "build:dev": "webpack --mode development -p --progress",
-    "build:prod": "npm run clean && webpack --mode production -p"
+    "build": "rm -rf dist && webpack --mode production -p --progress"
   },
   "babel": {
     "presets": [

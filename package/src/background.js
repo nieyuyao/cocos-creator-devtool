@@ -15,12 +15,9 @@ chrome.runtime.onConnect.addListener(port => {
 	 * @param {String} message.name 消息名字
 	 */
 	function onMessage(message = {}) {
-		const { name, tabId, source } = message;
+		const { tabId, source } = message;
 		if (source === 'devtool') {
 			ports[tabId] = port;
-			if (name === 'cc-devtool: check-ccid') {
-				chrome.runtime.sendMessage(message);
-			}
 		}
 	}
 	port.onMessage.addListener(onMessage);

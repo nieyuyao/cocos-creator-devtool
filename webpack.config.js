@@ -10,7 +10,7 @@ const {
 
 if (!process.env.NODE_ENV) {
 	process.env.NODE_ENV =
-		process.argv.indexOf("-p") !== -1 ? "production" : "development";
+		process.argv.indexOf("production") !== -1 ? "production" : "development";
 }
 const mode = process.env.NODE_ENV;
 const baseConfig = {

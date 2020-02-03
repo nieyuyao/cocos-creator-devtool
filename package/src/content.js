@@ -23,12 +23,5 @@ window.addEventListener('message', event => {
 
 // 监听来自background脚本的消息
 chrome.runtime.onMessage.addListener(message => {
-    const { name } = message;
-    if (name === 'cc-devtool: check-ccid') {
-        window.postMessage({
-            source: 'content',
-            name,
-            data: {}
-        })
-    }
+    //
 });

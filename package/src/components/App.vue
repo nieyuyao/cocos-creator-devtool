@@ -196,11 +196,11 @@ export default {
 		connect() {
 			this.inspectedWindow = chrome.devtools.inspectedWindow;
 			this.tabId = chrome.devtools.inspectedWindow.tabId;
-			this.conn = chrome.runtime.connect({
+			this.port = chrome.runtime.connect({
 				name: `${this.tabId}`
 			});
 			log(`Connecting to window ${this.tabId}`);
-			this.conn.onMessage.addListener(message => {
+			this.port.onMessage.addListener(message => {
 				if (!message) return;
 				switch (message.name) {
 					case 'cc-devtool: panel-shown':
@@ -225,13 +225,13 @@ export default {
 		},
 		// 断开与background.js的连接
 		disconnect() {
-			const conn = this.conn;
-			conn.disconnect();
+			const port = this.port;
+			port.disconnect();
 		},
 		// 发送消息
 		postMessage(messageName) {
-			const { conn, tabId } = this;
-			conn.postMessage({
+			const { port, tabId } = this;
+			port.postMessage({
 				source: 'devtool',
 				name: messageName,
 				tabId
@@ -353,7 +353,7 @@ export default {
 			let tryTimes = 60;
 			const vm = this;
 			const doEval = function() {
-				vm.eval('checkCCDevtool()')
+				vm.eval('window.checkCCDevtool && window.checkCCDevtool()')
 					.then(ccdevtool => {
 						if (ccdevtool) {
 							vm.ccdevtool = {};
