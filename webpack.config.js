@@ -3,6 +3,7 @@ const merge = require("webpack-merge");
 const path = require("path");
 const CopyWebpackPlugin = require("copy-webpack-plugin");
 const FriendlyErrorsPlugin = require("friendly-errors-webpack-plugin");
+const UglifyJsWebpackPlugin = require('uglifyjs-webpack-plugin');
 const {
 	VueLoaderPlugin
 } = require("vue-loader");
@@ -75,7 +76,18 @@ const baseConfig = {
 		}])
 	],
 	optimization: {
-		minimize: mode === "production"
+		minimize: mode === "production",
+		minimizer: [
+			new UglifyJsWebpackPlugin({
+				include: /\.js$/,
+				uglifyOptions: {
+					compress: {
+						drop_console: true,
+						drop_debugger: true
+					}
+				}
+			})
+		]
 	},
 	devServer: {
 		contentBase: path.resolve(__dirname, '/dist')
@@ -85,6 +97,7 @@ let devConfig = baseConfig;
 if (process.env.NODE_ENV === "development") {
 	devConfig = merge(baseConfig, {
 		devtool: "source-map",
+		optimization: {},
 		plugins: [
 			new FriendlyErrorsPlugin()
 		]
