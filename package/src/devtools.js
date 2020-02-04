@@ -15,8 +15,9 @@ import ElColorPicker from 'element-ui/lib/color-picker';
 import 'element-ui/lib/theme-chalk/index.css';
 import './assets/reset.css';
 import locale from 'element-ui/lib/locale/lang/en';
+import AppConnecting from './components/AppConnecting.vue';
 import App from "./components/App.vue";
-
+import { log, error } from './assets/utils';
 Vue.use(ElHeader, { locale });
 Vue.use(ElSwitch, { locale });
 Vue.use(ElTooltip, { locale });
@@ -31,9 +32,47 @@ Vue.use(ElTableColumn, { locale });
 Vue.use(ElInputNumber, { locale });
 Vue.use(ElColorPicker, { locale });
 
-new Vue({
-    el: '#app',
-    render: (h) => h(App)
+let app = new Vue({
+    render: (h) => h(AppConnecting)
+}).$mount('#app');
+
+function injectScript(cb) {
+    const scriptName = chrome.runtime.getURL('injected.bundle.js');
+    const injectedScript = `
+        (function() {
+            var script = document.constructor.prototype.createElement.call(document, 'script');
+            script.src = "${scriptName}";
+            document.documentElement.appendChild(script);
+            script.parentNode.removeChild(script);
+        })();
+    `;
+    chrome.devtools.inspectedWindow.eval(injectedScript, (res, err) => {
+        if (err) {
+            error(err);
+            return;
+        }
+        log('ccdevtool injected!');
+        cb();
+    });
+}
+
+function initApp() {
+    app = new Vue({
+        extends: App
+    }).$mount('#app');
+}
+
+function inject() {
+    // initApp();
+    injectScript(initApp);
+}
+
+chrome.devtools.network.onNavigated.addListener(() => {
+    app.$destroy();
+    inject();
 });
+
+//
+inject();
 
 

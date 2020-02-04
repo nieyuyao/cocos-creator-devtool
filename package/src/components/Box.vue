@@ -5,9 +5,9 @@
             <h3 class="title">Global</h3>
             <div 
                 class="bounding"
-                :class="{'bounding-hover': boundingHover, 'content-hover': wrapperHover}"
-                @mouseover="handleGlobalBoundingMouseEnter"
-                @mouseout="handleGlobalBoundingMouseLeave"
+                :class="{'bounding-hover': boundingHover, 'content-hover': contentHover}"
+                @mouseenter="mouseEnter('global', 'bounding')"
+                @mouseleave="mouseLeave('global', 'bounding')"
             >
                 <!-- 坐标轴 -->
                 <div class="axis-x"></div>
@@ -16,14 +16,14 @@
                 <div class="wrapper">
                     <div
                         class="content"
-                        @mouseover.stop="handleGlobalContentMouseEnter"
-                        @mouseout.stop="handleGlobalContentMouseLeave"
+                        @mouseenter.stop="mouseEnter('global', 'content')"
+                        @mouseleave.stop="mouseLeave('global', 'content')"
                     >
                         <span>{{contentWidth}}×{{contentHeight}}</span>
-                        <div class="place">
-                            <div class="place-x">{{globalX}}</div>
-                            <div class="place-y">{{globalY}}</div>
-                        </div>
+                    </div>
+                    <div class="place">
+                        <div class="place-x">{{globalX}}</div>
+                        <div class="place-y">{{globalY}}</div>
                     </div>
                 </div>
             </div>
@@ -35,8 +35,8 @@
             <div
                 class="parent"
                 :class="{'parent-hover': parentHover, 'child-hover': childHover}"
-                @mouseover="handleLocalParentMouseEnter"
-                @mouseout="handleLocalParentMouseLeave"
+                @mouseenter="mouseEnter('local', 'parent')"
+                @mouseleave="mouseLeave('local', 'parent')"
             >
                 <div class="place-top">{{localTop}}</div>
                 <div class="place-bottom">{{localBottom}}</div>
@@ -44,8 +44,8 @@
                 <div class="place-right">{{localRight}}</div>
                 <div
                     class="child"
-                    @mouseover.stop="handleLocalChildMouseEnter"
-                    @mouseout.stop="handleLocalChildMouseLeave"
+                    @mouseenter.stop="mouseEnter('local', 'child')"
+                    @mouseleave.stop="mouseLeave('local', 'child')"
                 >
                     <span>{{contentWidth}}×{{contentHeight}}</span>
                 </div>
@@ -61,10 +61,11 @@
     .bounding {
         position: relative;
         width: 200px;
-        height: 200px;
+        height: 140px;
         margin: 40px 0 40px 40px;
         border: 1px dashed black;
         background-color:#f3cea5;
+        transition: background-color 0.2s 0s linear;
         &.bounding-hover {
             .content {
                 background-color: #fff;
@@ -81,7 +82,7 @@
     }
     .axis-x {
         position: absolute;
-        top: 50%;
+        top: 100%;
         left: 50%;
         width: 240px;
         height: 0px;
@@ -99,9 +100,9 @@
     .axis-y {
         position: absolute;
         top: 50%;
-        left: 50%;
+        left: 0%;
         width: 0px;
-        height: 240px;
+        height: 180px;
         border-left: 1px dotted black;
         transform: translate(-50%, -50%);
         &::after {
@@ -115,10 +116,11 @@
     }
     .wrapper {
         position: absolute;
-        top: 10px;
-        left: 20px;
-        width: 50px;
-        height: 20px;
+        top: 50%;
+        left: 50%;
+        width: 100px;
+        height: 40px;
+        transform: translate(-50%, -50%);
         .content {
             position: absolute;
             top: 50%;
@@ -128,29 +130,31 @@
             font-size: 10px;
             transform: translate(-50%, -50%);
             background-color: #a8c5e5;
-            .place {
-                display: none;
-                position: absolute;
-                top: 50%;
-                left: 50%;
-                width: 55px;
-                height: 80px;
-                border-top: 1px solid red;
-                border-left: 1px solid red;
-                color: red;
-                font-size: 8px;
-            }
-            .place-x {
-                position: absolute;
-                right: 4px;
-                text-align: right;
-            }
-            .place-y {
-                position: absolute;
-                left: 4px;
-                bottom: 4px;
-                text-align: left;
-            }
+            transition: background-color 0.2s 0s linear;
+        }
+        .place {
+            display: none;
+            position: absolute;
+            top: 50%;
+            right: 50%;
+            width: 100px;
+            height: 70px;
+            border-top: 1px solid red;
+            border-right: 1px solid red;
+            color: red;
+            font-size: 8px;
+            pointer-events: none;
+        }
+        .place-x {
+            position: absolute;
+            left: 4px;
+            text-align: right;
+        }
+        .place-y {
+            position: absolute;
+            right: 4px;
+            bottom: 4px;
+            text-align: left;
         }
     }
 }
@@ -165,10 +169,11 @@
         justify-content: center;
         align-items: center;
         width: 200px;
-        height: 200px;
+        height: 140px;
         margin: 40px 0 40px 40px;
         border: 1px dashed black;
         background-color:#f3cea5;
+        transition: background-color 0.2s 0s linear;
         &.parent-hover {
             .child {
                 background-color: #fff;
@@ -186,7 +191,8 @@
         height: 60px;
         border: 1px solid black;
         font-size: 10px;
-        background-color: #a8c5e5;        
+        background-color: #a8c5e5;
+        transition: background-color 0.2s 0s linear;
     }
     [class*="place-"] {
         position: absolute;
@@ -222,100 +228,99 @@ export default {
     },
     data() {
         return {
-            wrapperHover: false,
-            boundingHover: false,
-            parentHover: false,
-            childHover: false
+            // 控制全局盒子的显示
+            boundingHover: false, // mouse是否浮动在boundingt元素上方
+            contentHover: false, // mouse是否浮动在content元素上方
+            // 控制局部盒子的显示
+            parentHover: false, // mouse是否浮动在parent元素上方
+            childHover: false, // mouse是否浮动在child元素上方
+            // 控制屏幕盒子的显示
+            screenParentHover: false, // mouse是否浮动在parent元素上方
+            screenChildHover: false // mouse是否浮动在child元素上方
         }
     },
     computed: {
         globalX() {
             const { globalBound } = this.bound;
-            if (globalBound && typeof globalBound.x === 'number') {
-                return globalBound.x;
-            }
-            return '-';
+            return globalBound && typeof globalBound.x === 'number' ? Math.round(globalBound.x) : '-';
         },
         globalY() {
             const { globalBound } = this.bound;
-            if (globalBound && typeof globalBound.y === 'number') {
-                return globalBound.y;
-            }
-            return '-';
+            return globalBound && typeof globalBound.y === 'number' ? Math.round(globalBound.y) : '-';
         },
         localTop() {
             const { localBound } = this.bound;
-            if (localBound && typeof localBound.top === 'number') {
-                return localBound.top;
-            }
-            return '-';
+            return localBound && typeof localBound.top === 'number' ? Math.round(localBound.top) : '-';
         },
         localBottom() {
             const { localBound } = this.bound;
-            if (localBound && typeof localBound.bottom === 'number') {
-                return localBound.bottom;
-            }
-            return '-';
+            return localBound && typeof localBound.bottom === 'number' ? Math.round(localBound.bottom) : '-';
         },
         localLeft() {
             const { localBound } = this.bound;
-            if (localBound && typeof localBound.left === 'number') {
-                return localBound.left;
-            }
-            return '-';
+            return localBound && typeof localBound.left === 'number' ? Math.round(localBound.left) : '-';
         },
         localRight() {
             const { localBound } = this.bound;
-            if (localBound && typeof localBound.right === 'number') {
-                return localBound.right;
-            }
-            return '-';
+            return localBound && typeof localBound.right === 'number' ?  Math.round(localBound.right) : '-';
         },
         contentWidth() {
-            const { globalBound, localBound } = this.bound;
-            if (globalBound && typeof globalBound.width === 'number') {
-                return globalBound.width;
-            }
-            else if (localBound && typeof localBound.widt === 'number') {
-                return localBound.width;
-            }
-            return '-';
+            const width = this.bound.width;
+            return typeof width === 'number' ? Math.round(width) : '-';
         },
         contentHeight() {
-            const { globalBound, localBound } = this.bound;
-            if (globalBound && typeof globalBound.height === 'number') {
-                return globalBound.height;
-            }
-            else if (localBound && typeof localBound.height === 'number') {
-                return localBound.height;
-            }
-            return '-';
+            const height = this.bound.height;
+            return typeof height === 'number' ? Math.round(height) : '-';
         }
     },
     methods: {
-        handleGlobalBoundingMouseEnter(event) {
-            this.boundingHover = true;
+        mouseEnter(type, node) {
+            const sign = `${type}-${node}`;
+            const uuid = this.bound.uuid;
+            switch (sign) {
+                case 'global-bounding':
+                    this.boundingHover = true;
+                    break;
+                case 'global-content':
+                    this.boundingHover = false;
+                    this.contentHover = true;
+                    this.$emit('box-show', uuid);
+                    break;
+                case 'local-parent':
+                    this.parentHover = true;
+                    break;
+                case 'local-child':
+                    this.parentHover = false;
+                    this.childHover = true;
+                    this.$emit('box-show', uuid);
+                    break;
+            }
         },
-        handleGlobalBoundingMouseLeave() {
-            this.boundingHover = false;
-        },
-        handleGlobalContentMouseEnter() {
-            this.wrapperHover = true;
-        },
-        handleGlobalContentMouseLeave() {
-            this.wrapperHover = false;
-        },
-        handleLocalParentMouseEnter() {
-            this.parentHover = true;
-        },
-        handleLocalParentMouseLeave() {
-            this.parentHover = false;
-        },
-        handleLocalChildMouseEnter() {
-            this.childHover = true;
-        },
-        handleLocalChildMouseLeave() {
-            this.childHover = false;
+        mouseLeave(type, node) {
+            const sign = `${type}-${node}`;
+            const uuid = this.bound.uuid;
+            switch (sign) {
+                //
+                case 'global-bounding':
+                    this.boundingHover = false;
+                    this.contentHover = false;
+                    break;
+                case 'global-content':
+                    this.boundingHover = true;
+                    this.contentHover = false;
+                    this.$emit('box-hide', uuid);
+                    break;
+                //
+                case 'local-parent':
+                    this.parentHover = false;
+                    this.childHover = false;
+                    break;
+                case 'local-child':
+                    this.parentHover = true;
+                    this.childHover = false;
+                    this.$emit('box-hide', uuid);
+                    break;
+            }
         }
     }
 }

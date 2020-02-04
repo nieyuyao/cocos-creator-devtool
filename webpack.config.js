@@ -3,13 +3,14 @@ const merge = require("webpack-merge");
 const path = require("path");
 const CopyWebpackPlugin = require("copy-webpack-plugin");
 const FriendlyErrorsPlugin = require("friendly-errors-webpack-plugin");
+const UglifyJsWebpackPlugin = require('uglifyjs-webpack-plugin');
 const {
 	VueLoaderPlugin
 } = require("vue-loader");
 
 if (!process.env.NODE_ENV) {
 	process.env.NODE_ENV =
-		process.argv.indexOf("-p") !== -1 ? "production" : "development";
+		process.argv.indexOf("production") !== -1 ? "production" : "development";
 }
 const mode = process.env.NODE_ENV;
 const baseConfig = {
@@ -18,7 +19,8 @@ const baseConfig = {
 		'devtools-background': "./package/src/devtools-background.js",
 		background: "./package/src/background.js",
 		devtools: "./package/src/devtools.js",
-		content: "./package/src/content.js"
+		content: "./package/src/content.js",
+		injected: './package/src/injected.js'
 	},
 	output: {
 		filename: "[name].bundle.js",
@@ -74,7 +76,19 @@ const baseConfig = {
 		}])
 	],
 	optimization: {
-		minimize: mode === "production"
+		minimize: mode === "production",
+		minimizer: [
+			new UglifyJsWebpackPlugin({
+				include: /\.js$/,
+				uglifyOptions: {
+					compress: {
+						// drop_console: true,
+						pure_funcs: ['console.log', 'console.error'],
+						drop_debugger: true
+					}
+				}
+			})
+		]
 	},
 	devServer: {
 		contentBase: path.resolve(__dirname, '/dist')
@@ -84,6 +98,7 @@ let devConfig = baseConfig;
 if (process.env.NODE_ENV === "development") {
 	devConfig = merge(baseConfig, {
 		devtool: "source-map",
+		optimization: {},
 		plugins: [
 			new FriendlyErrorsPlugin()
 		]

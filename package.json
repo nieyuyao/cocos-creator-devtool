@@ -4,9 +4,8 @@
   "license": "MIT",
   "scripts": {
     "dev": "webpack-dev-server",
-    "clean": "rm -rf dist",
-    "build": "webpack --mode production -p --progress",
-    "build:clean": "npm run clean && webpack --mode production -p"
+    "build": "rm -rf dist && webpack --mode production -p --progress",
+    "zip": "rm -rf zip && mkdir zip && zip -r -9 ./zip/cc-devtool.zip ./dist "
   },
   "babel": {
     "presets": [
@@ -38,6 +37,7 @@
     "node-sass": "^4.7.2",
     "sass-loader": "^7.0.1",
     "style-loader": "^0.21.0",
+    "uglifyjs-webpack-plugin": "^2.2.0",
     "url-loader": "^1.1.2",
     "vue-loader": "^15.2.4",
     "vue-template-compiler": "^2.5.13",

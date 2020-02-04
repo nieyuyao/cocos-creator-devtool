@@ -1,292 +1,14 @@
-export default function () {
-	if (!window.cc) {
-		return;
-	}
-	/**
-	 * @description 控制游戏参数面板显示的类
-	 * @param {Number} average 每隔多长时间刷新一次统计面板
-	 * @param {Object} statsInfo 需要统计的信息
-	 */
-	function Stats(average, statsInfo){
-		this.statsInfo = statsInfo;
-		this.average = average;
-		this.time = performance.now();
-		const stats = document.createElement('div');
-		stats.id = StatsLayerId;
-		const pstats = document.createElement('div');
-		pstats.className = 'pstats';
-		const style = document.createElement('style');
-		style.textContent = StatsStyleText;
-		document.head.appendChild(style);
-		const pstatsCon = document.createElement('div');
-		pstatsCon.className = 'pstats-container';
-		pstats.appendChild(pstatsCon);
-		stats.appendChild(pstats);
-		document.body.appendChild(stats);
-		Object.keys(statsInfo).forEach((key, index) => {
-			const row = statsInfo[key];
-			const item = document.createElement("div");
-			item.className = "pstats-item";
-			const label = document.createElement("div");
-			label.className = "pstats-label";
-			const counter = document.createElement("span");
-			counter.className = "pstats-counter-id";
-			counter.textContent = row.desc;
-			const value = document.createElement("div");
-			value.className = "pstats-counter-value";
-			label.appendChild(counter);
-			label.appendChild(value);
-			item.appendChild(label);
-			pstatsCon.appendChild(item);
-			item.style.top = `${index * 12}px`;
-			row.valueNode = value;
-			value.innerText = row.value || 0;
-			this[key] = row;
-		});
-	}
-	Stats.prototype.tick = function() {
-		const now = performance.now();
-		if (now - this.time < this.average) {
-			return;
-		}
-		this.time = now;
-		const statsInfo = this.statsInfo;
-		Object.keys(statsInfo).forEach(key => {
-			const row = statsInfo[key];
-			row.valueNode.innerText = Math.round(row.value * 100) / 100;
-		});
-	}
-	/**
-	 * Get components data from given node
-	 * @param  {cc.Node} n
-	 * @return {Array} array of property/value
-	 */
-	function getComponentsData(node) {
-		const comps = node._components;
-		return comps.reduce((result, comp, i) => {
-			const props = comp.constructor.__props__
-				.filter(prop => {
-					return ignoredComponentProp.indexOf(prop) < 0 && prop[0] != '_';
-				})
-				.map(name => {
-					const type = typeOf(comp[name]);
-					const ret = {
-						name,
-						type: type.component,
-						rawType: type.raw
-					};
-					ret.value = valueOf(comp[name]);
-					return ret;
-				});
-			result.push({
-				key: comp.__classname__,
-				index: i,
-				uuid: node.uuid,
-				value: '<<Inspect>>',
-				props
-			});
-			return result;
-		}, []);
-	}
-	/**
-	 * Convert CSS Color from hex string to color components
-	 * @param  {String} hex
-	 * @return {Object} {r,g,b}
-	 */
-	function hexToRgb(hex) {
-		var comps = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-		return comps ?
-			{
-				r: parseInt(comps[1], 16),
-				g: parseInt(comps[2], 16),
-				b: parseInt(comps[3], 16)
-			} :
-			null;
-	}
-	function valueOf(val) {
-		const t = typeof val;
-		if (
-			t === 'undefined' ||
-			t === 'string' ||
-			t === 'number' ||
-			t === 'boolean'
-		) {
-			return val;
-		}
-		if (val === null) return 'null';
-		switch (val.constructor.name) {
-			case 'Color':
-			case 'Size':
-			case 'Vec2':
-			case 'Vec3':
-				return val.toString();
-		}
-		if (val && val.constructor) return `<${val.constructor.name}>`;
-		return '<unknown>';
-	}
-	function typeOf(val) {
-		let raw = typeof val;
-		let component = '';
-		switch (raw) {
-			case 'string':
-				component = 'ElInput';
-				break;
-			case 'number':
-				component = 'ElInputNumber';
-				break;
-			case 'boolean':
-				component = 'ElSwitch';
-				break;
-		}
-		if (!component && val && val.constructor) {
-			raw = val.constructor.name;
-			if (raw === 'Color') {
-				component = 'ElColorPicker';
-			}
-		}
-		return {
-			raw,
-			component
-		};
-	}
-	// 需要忽略掉的组件属性
-	const ignoredComponentProp = [
-		"_name",
-		"_objFlags",
-		"node",
-		"name",
-		"uuid",
-		"__scriptAsset",
-		"_enabled",
-		"enabled",
-		"enabledInHierarchy",
-		"_isOnLoadCalled"
-	];
-	const SerializeProps = {
-		default: [
-			//identity
-			"name",
-			"active",
-			"uuid",
-			//position, dimesion
-			"x",
-			"y",
-			"width",
-			"height",
-			"zIndex",
-			//prepresentation
-			"color",
-			"opacity",
-			//transformation
-			"anchorX",
-			"anchorY",
-			"rotation",
-			"scaleX",
-			"scaleY"
-			// 'skewX', 'skewY'
-		],
-		"2.0.0": [
-			//identity
-			"name",
-			"active",
-			"uuid",
-			//position, dimesion
-			"x",
-			"y",
-			"width",
-			"height",
-			"zIndex",
-			//prepresentation
-			"color",
-			"opacity",
-			//transformation
-			"anchorX",
-			"anchorY",
-			"angle",
-			"scaleX",
-			"scaleY"
-			// 'skewX', 'skewY'
-		]
-	};
-	const StatsStyleText = `
-	.pstats {
-		position: fixed;
-		padding: 0px;
-		width: 150px;
-		height: 72px;
-		right: 0px;
-		bottom: 0px;
-		font-size: 10px;
-		font-family: 'Roboto Condensed', tahoma, sans-serif;
-		overflow: hidden;
-		user-select: none;
-		cursor: default;
-		background: #222;
-		border-radius: 3px;
-		z-index: 9999;
-	}
-	.pstats-container {
-		display: block;
-		position: relative;
-		color: #888;
-		white-space: nowrap;
-	}
-	.pstats-item {
-		position: absolute;
-		width: 250px;
-		height: 12px;
-		left: 0px;
-	}
-	.pstats-label {
-		position: absolute;
-		width: 150px;
-		height: 12px;
-		text-align: left;
-		transition: background 0.3s;
-	}
-	.pstats-label.alarm {
-		color: #ccc;
-		background: #800;
-	
-		transition: background 0s;
-	}
-	.pstats-counter-id {
-		position: absolute;
-		width: 90px;
-		left: 0px;
-	}
-	.pstats-counter-value {
-		position: absolute;
-		width: 60px;
-		left: 90px;
-		text-align: right;
-	}
-	.pstats-canvas {
-		display: block;
-		position: absolute;
-		right: 0px;
-		top: 1px;
-	}
-	.pstats-fraction {
-		position: absolute;
-		width: 250px;
-		left: 0px;
-	}
-	.pstats-legend {
-		position: absolute;
-		width: 150px;
-		text-align: right;
-	}
-	.pstats-legend > span {
-		position: absolute;
-		right: 0px;
-	}
-	`;
-	const NodesCache = {}; // Node cache which contains cc.Node refs
-	const NodesCacheData = {}; // Node data cache
-	const InspectLayerId = 'cc-devtool-inspect-layer';
-	const StatsLayerId = 'fps';
-	const ccdevtool = (window.ccdevtool = {
+import { SerializeProps, InspectLayerInfo, StatsLayerId } from './assets/constants';
+import { getComponentsData, hexToRgb } from './assets/utils';
+import Stats from './help/Stats';
+const NodesCache = {}; // Node cache which contains cc.Node refs 保存的是节点
+const NodesCacheData = {}; // Node data cache 序列化后的节点信息
+function initCCDevtool() {
+	let canvasWidth = 0;
+	let canvasHeight = 0;
+	let canvasNodeWidth = 0;
+	let canvasNodeHeight = 0;
+	const ccdevtool = {
 		nodeId: 1,
 		stats: null,
 		/**
@@ -300,13 +22,20 @@ export default function () {
 			// 如果场景已经被加载序列化场景
 			try {
 				if (scene) {
+					const size = cc.view.getCanvasSize();
+					canvasWidth = size.width;
+					canvasHeight = size.height;
 					if (!scene.name) {
-						scene.name = 'Scene';
+						scene.name = "Scene";
+					}
+					// 获取场景中的第一个节点 => Canvas节点
+					if (scene.children[0]) {
+						canvasNodeWidth = scene.children[0].width;
+						canvasNodeHeight = scene.children[0].height;
 					}
 					ret = this.serialize(scene, true);
 				}
-			}
-			catch(err) {
+			} catch (err) {
 				console.error(err);
 			}
 			return ret;
@@ -316,7 +45,7 @@ export default function () {
 		 * @param  {String} name, all type are prefixed with ':'
 		 * @param  {Any} data
 		 */
-		postMessage(name = '', data = {}) {
+		postMessage(name = "", data = {}) {
 			window.postMessage({
 					name,
 					data
@@ -351,24 +80,24 @@ export default function () {
 		 * @description Hide inspect layer
 		 */
 		hideInspectLayer() {
-			this.toggleElement(`#${InspectLayerId}`, false);
+			this.toggleElement(`#${InspectLayerInfo.id}`, false);
 		},
 		/**
 		 * @description Show inspect layer
 		 */
 		showInspectLayer() {
-			const inspectLayer = document.getElementById(InspectLayerId);
+			const inspectLayer = document.getElementById(InspectLayerInfo.id);
 			if (!inspectLayer) {
 				this.createInspectLayer();
 			}
-			this.toggleElement(`#${InspectLayerId}`, true);
+			this.toggleElement(`#${InspectLayerInfo.id}`, true);
 		},
 		/**
 		 * @description Create inspect layer
 		 */
 		createInspectLayer() {
-			const inspectLayer = document.createElement("canvas");
-			const ccCanvas = document.getElementById("GameCanvas");
+			const ccCanvas = document.getElementById('GameCanvas');
+			const inspectLayer = document.createElement('canvas');
 			inspectLayer.width = ccCanvas.width;
 			inspectLayer.height = ccCanvas.height;
 			const {
@@ -388,8 +117,92 @@ export default function () {
 				z-index: 999999;
 				pointer-events: none;
 			`;
-			inspectLayer.id = InspectLayerId;
+			inspectLayer.id = InspectLayerInfo.id;
 			document.body.appendChild(inspectLayer);
+		},
+		/**
+		 * globalPosition => glPosition => screenPostion
+		 * @description 根据节点在Canvas节点中的坐标转换至屏幕坐标
+		 * @param {cc.Node} node 节点
+		 */
+		getScreenPosition(node) {
+			const { anchorX, anchorY } = node; 
+			const worldPosition = node.convertToWorldSpaceAR();
+			// 左上角
+			const leftTop = this.convertWorldToScreen(new cc.Vec2(
+				worldPosition.x - node.width * anchorX,
+				worldPosition.y + node.height * (1 - anchorY)
+			));
+			// 右上角
+			const rightTop = this.convertWorldToScreen(new cc.Vec2(
+				worldPosition.x + node.width * (1 - anchorX),
+				worldPosition.y + node.height * (1 - anchorY)
+			));
+			// 左下角
+			const leftBottom = this.convertWorldToScreen(new cc.Vec2(
+				worldPosition.x - node.width * anchorX,
+				worldPosition.y - node.height * anchorY
+			));
+			// 右下角
+			const rightBottom = this.convertWorldToScreen(new cc.Vec2(
+				worldPosition.x + node.width * (1 - anchorX),
+				worldPosition.y - node.height * anchorY
+			));
+			return {
+				leftTop,
+				rightTop,
+				leftBottom,
+				rightBottom
+			}
+		},
+		/**
+		 * glPosition => screenPostion
+		 * @description 节点的gl坐标转化为全局屏幕坐标
+		 * @param {cc.Vec2} vec2 节点相对于canvas节点坐标 [中心为坐标原点]
+		 */
+		convertWorldToScreen(vec2) {
+			const x = vec2.x - canvasNodeWidth / 2;
+			const y = vec2.y - canvasNodeHeight / 2;
+			const glX = x / (canvasNodeWidth / 2);
+			const glY = y / (canvasNodeHeight / 2);
+			return new cc.Vec2(
+				(1 + glX) * canvasWidth / 2,
+				(1 - glY) * canvasHeight / 2
+			);
+		},
+		/**
+		 * @description 在inspect layer上显示节点
+		 * @param {uuid} String 节点的uuid
+		 */
+		projectNodeToInspectLayer(uuid) {
+			const { id, color, textColor, textFont } = InspectLayerInfo;
+			const inspectLayer = document.getElementById(id);
+			const ctx = inspectLayer.getContext('2d');
+			const node = NodesCacheData[uuid];
+			if (node) {
+				const screenBound = node.bound.screenBound;
+				ctx.clearRect(0, 0, inspectLayer.width, inspectLayer.height);
+				const { leftTop, rightTop, leftBottom, rightBottom } = screenBound;
+				ctx.beginPath();
+				ctx.moveTo(leftTop.x, leftTop.y);
+				ctx.lineTo(rightTop.x, rightTop.y);
+				ctx.lineTo(rightBottom.x, rightBottom.y);
+				ctx.lineTo(leftBottom.x, leftBottom.y);
+				ctx.closePath();
+				ctx.fillStyle = color;
+				ctx.fill();
+				ctx.fillStyle = textColor;
+				ctx.font = textFont;
+				ctx.textAlign = 'center';
+				ctx.textBaseline = 'middle';
+				ctx.fillText(node.name, (leftTop.x + rightTop.x) / 2, (leftTop.y + leftBottom.y) / 2);
+			}
+		},
+		disableNodeToInspectLayer() {
+			const id = InspectLayerInfo.id;
+			const inspectLayer = document.getElementById(id);
+			const ctx = inspectLayer.getContext('2d');
+			ctx.clearRect(0, 0, inspectLayer.width, inspectLayer.height);
 		},
 		/**
 		 * @description Hide stats panel
@@ -409,9 +222,11 @@ export default function () {
 				this.createStatsPanel();
 			}
 			this.toggleElement(`#${StatsLayerId}`, true);
-			cc.director.on(cc.Director.EVENT_BEFORE_UPDATE, this.beforeUpdate, this);
-            cc.director.on(cc.Director.EVENT_AFTER_VISIT, this.afterVisit, this);
-            cc.director.on(cc.Director.EVENT_AFTER_DRAW, this.afterDraw, this);
+			if (this.stats) {
+				cc.director.on(cc.Director.EVENT_BEFORE_UPDATE, this.beforeUpdate, this);
+				cc.director.on(cc.Director.EVENT_AFTER_VISIT, this.afterVisit, this);
+				cc.director.on(cc.Director.EVENT_AFTER_DRAW, this.afterDraw, this);
+			}
 		},
 		/**
 		 * @description Create stats panel
@@ -419,13 +234,39 @@ export default function () {
 		createStatsPanel() {
 			// fps = 1s / (frame + 两个frame之间的时间间隔)
 			const statsInfo = {
-				frame: { desc: 'Frame time (ms)', value: 0, before: 0, after: 0 }, // 每帧耗时
-				fps: { desc: 'Framerate (FPS)', below: 30, value: 0 }, // 帧率
-				draws: { desc: 'Draw call', value: 0 }, // drawCall次数
-				logic: { desc: 'Game Logic (ms)', value: 0, before: 0, after: 0 }, // logic js耗时
-				render: { desc: 'Renderer (ms)', value: 0, before: 0, after: 0 }, // 渲染耗时
-				mode: { desc: cc._renderType === cc.game.RENDER_TYPE_WEBGL ? 'WebGL' : 'Canvas', min: 1, value: cc._renderType === cc.game.RENDER_TYPE_WEBGL ? 0 : 1 } // 渲染模式
-			}
+				frame: {
+					desc: "Frame time (ms)",
+					value: 0,
+					before: 0,
+					after: 0
+				}, // 每帧耗时
+				fps: {
+					desc: "Framerate (FPS)",
+					below: 30,
+					value: 0
+				}, // 帧率
+				draws: {
+					desc: "Draw call",
+					value: 0
+				}, // drawCall次数
+				logic: {
+					desc: "Game Logic (ms)",
+					value: 0,
+					before: 0,
+					after: 0
+				}, // logic js耗时
+				render: {
+					desc: "Renderer (ms)",
+					value: 0,
+					before: 0,
+					after: 0
+				}, // 渲染耗时
+				mode: {
+					desc: cc._renderType === cc.game.RENDER_TYPE_WEBGL ? "WebGL" : "Canvas",
+					min: 1,
+					value: cc._renderType === cc.game.RENDER_TYPE_WEBGL ? 0 : 1
+				} // 渲染模式
+			};
 			this.stats = new Stats(500, statsInfo);
 		},
 		/**
@@ -436,19 +277,31 @@ export default function () {
 		 */
 		beforeUpdate() {
 			const now = performance.now();
-			const { logic, frame } = this.stats;
+			const {
+				logic,
+				frame
+			} = this.stats;
 			logic.before = now;
 			frame.before = now;
 		},
 		afterVisit() {
-			const { logic, render } = this.stats;
+			const {
+				logic,
+				render
+			} = this.stats;
 			const now = performance.now();
 			logic.after = now;
 			render.before = now;
 		},
 		afterDraw() {
 			const now = performance.now();
-			const { logic, draws, render, frame, fps } = this.stats;
+			const {
+				logic,
+				draws,
+				render,
+				frame,
+				fps
+			} = this.stats;
 			render.after = now;
 			frame.after = now;
 			logic.value = logic.after - logic.before;
@@ -468,7 +321,6 @@ export default function () {
 		 * @param  {String} uuid, uuid of node
 		 */
 		selectNode(uuid) {
-			console.error(uuid);
 			window.$n1 = window.$n0;
 			window.$n0 = NodesCache[uuid];
 		},
@@ -483,7 +335,9 @@ export default function () {
 			const nodeInfo = NodesCacheData[uuid];
 			if (!node || !nodeInfo) return;
 			const prop = nodeInfo.props.find(p => p.key === key);
-			if (prop) prop.value = value;
+			if (prop) {
+				prop.value = value;
+			}
 			if (key === "color") {
 				let comp = hexToRgb(value);
 				if (comp) {
@@ -504,7 +358,7 @@ export default function () {
 		 * Print node in Console
 		 * @param  {String} uuid, uuid of a node
 		 */
-		inspectNode(uuid) {
+		printNode(uuid) {
 			console.trace((window.$n = NodesCache[uuid]));
 		},
 		/**
@@ -517,9 +371,9 @@ export default function () {
 			const props =
 				SerializeProps[cc.ENGINE_VERSION >= "2.0.0" ? "2.0.0" : "default"];
 			const kv = props.reduce((result, key) => {
-				/** case 场景节点不允许获取和修改active属性 在后来的cocos版本中已被废弃 **/ 
+				/** case 场景节点不允许获取和修改active属性 在后来的cocos版本中已被废弃 **/
 				let value;
-				if (isScene && key === 'active') {
+				if (isScene && key === "active") {
 					value = true;
 				} else {
 					value = node[key];
@@ -537,30 +391,45 @@ export default function () {
 			let bound = {};
 			bound.localBound = {};
 			bound.globalBound = {};
+			bound.screenBound = {};
 			if (node.parent) {
-				const globalBound = node.getBoundingBoxToWorld();
+				bound.width = node.width;
+				bound.height = node.height;
+				// 全局坐标
+				const globalPosition = node.convertToWorldSpaceAR();
+				bound.globalBound.x = globalPosition.x;
+				bound.globalBound.y = globalPosition.y;
+				// 局部坐标
 				const localBound = node.getBoundingBox();
-				//
-				const { anchorX, anchorY } = node;
-				bound.globalBound.x = globalBound.xMin * (1 - anchorX) + globalBound.xMax * anchorX;
-				bound.globalBound.y = globalBound.yMin *  (1 - anchorY) + globalBound.yMax * anchorY;
-				bound.globalBound.width = node.width,
-				bound.globalBound.height = node.height;
-				const { anchorX: pAnchorX, anchorY: pAnchorY, width: pW, height: pH } = node.parent;
-				//
-				bound.localBound.width = localBound.width;
-				bound.localBound.height = localBound.height;
+				const {
+					anchorX: pAnchorX,
+					anchorY: pAnchorY,
+					width: pW,
+					height: pH
+				} = node.parent;
 				bound.localBound.top = (1 - pAnchorY) * pH - (localBound.yMin + localBound.height);
 				bound.localBound.bottom = localBound.yMin + pAnchorY * pH;
 				bound.localBound.left = localBound.xMin + pAnchorX * pW;
 				bound.localBound.right = (1 - pAnchorX) * pW - (localBound.xMin + localBound.width);
+				// 屏幕位置
+				bound.screenBound = this.getScreenPosition(node);
+			} else {
+				// 场景
+				bound.screenBound = {
+					leftTop: this.convertWorldToScreen(new cc.Vec2(0, canvasNodeHeight)),
+					rightTop: this.convertWorldToScreen(new cc.Vec2(canvasNodeWidth, canvasNodeHeight)),
+					leftBottom: this.convertWorldToScreen(new cc.Vec2(0, 0)),
+					rightBottom: this.convertWorldToScreen(new cc.Vec2(canvasNodeWidth, 0))
+				}
 			}
 			/**
 			 * Cache node in some place other than NodesCacheData
 			 * pass node reference to devtool will cause `Object reference chain is too long` error
 			 */
 			NodesCache[node.uuid] = node;
+			bound.uuid = node.uuid;
 			const ret = (NodesCacheData[node.uuid] = {
+				name: node.name || 'Anonymous',
 				id: this.nodeId++,
 				uuid: node.uuid,
 				label: node.name,
@@ -571,25 +440,26 @@ export default function () {
 			});
 			return ret;
 		}
-	});
+	};
+	window.ccdevtool = ccdevtool;
 	/**
 	 * Hijack cc.director.loadScene()
 	 * when loadScene is called, notify cc-devtool panel to refresh node tree
 	 */
 	if (cc.director) {
 		cc.director.on(cc.Director.EVENT_AFTER_SCENE_LAUNCH, () => {
-			this.postMessage('cc-devtool: lauch-scene');
+			ccdevtool.postMessage("cc-devtool: lauch-scene");
 		});
 	}
 	if (cc && cc.game) {
-		if (!cc.game.hasEventListener('game_on_show')) {
-			cc.game.on('game_on_show', function () {
-				ccdevtool.postMessage('cc-devtool: game-show');
+		if (!cc.game.hasEventListener("game_on_show")) {
+			cc.game.on("game_on_show", function () {
+				ccdevtool.postMessage("cc-devtool: game-show");
 			});
 		}
-		if (!cc.game.hasEventListener('game_on_hide')) {
-			cc.game.on('game_on_hide', function () {
-				ccdevtool.postMessage('cc-devtool: game-hide');
+		if (!cc.game.hasEventListener("game_on_hide")) {
+			cc.game.on("game_on_hide", function () {
+				ccdevtool.postMessage("cc-devtool: game-hide");
 			});
 		}
 	}
@@ -603,8 +473,15 @@ export default function () {
 		"background:transparent"
 	);
 	ccdevtool.postMessage("cc-devtool: cc-found");
-	window.addEventListener('message', (event) => {
-		console.log(event);
-	});
-	ccdevtool.on
+	return ccdevtool;
 }
+window.checkCCDevtool = function() {
+	const { ccdevtool, cc } = window;
+	if (ccdevtool) {
+		return ccdevtool;
+	}
+	if (cc) {
+		return initCCDevtool();
+	}
+}
+checkCCDevtool();

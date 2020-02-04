@@ -1,5 +1,5 @@
 <template>
-	<div class="main">
+	<div class="main" id="app">
 		<!-- 顶部 -->
 		<ElHeader class="header">
 			<div class="title">
@@ -12,13 +12,13 @@
 					<div class="switch">
 						<ElSwitch v-model="isShowStats"></ElSwitch>
 						<ElTooltip effect="dark" content="Show Stats/显示游戏参数" placement="bottom">
-							<span>Stats</span>
+							<span class="text-tip">Stats</span>
 						</ElTooltip>
 					</div>
 					<div class="switch">
-						<ElSwitch v-model="isShowInspectLayer"></ElSwitch>
+						<ElSwitch v-model="isShowInspectLayer" active-color="#13ce66"></ElSwitch>
 						<ElTooltip effect="dark" content="Show Inspect Layer/显示调试层" placement="bottom">
-							<span>Inspect</span>
+							<span class="text-tip">Inspect</span>
 						</ElTooltip>
 					</div>
 				</div>
@@ -28,7 +28,7 @@
 						<ElTooltip effect="dark" content="重新加载场景" placement="bottom">
 							<div>
 								<ElButton type="primary" icon="el-icon-refresh-right" size="small" circle></ElButton>
-								<span>Reload Scene</span>
+								<span class="text-tip">Reload Scene</span>
 							</div>
 						</ElTooltip>
 					</div>
@@ -37,7 +37,7 @@
 						<ElTooltip effect="dark" content="重新加载插件" placement="bottom">
 							<div>
 								<ElButton type="primary" icon="el-icon-files" size="small" circle></ElButton>
-								<span>Reload Extension</span>
+								<span class="text-tip">Reload Extension</span>
 							</div>
 							
 						</ElTooltip>
@@ -57,17 +57,17 @@
 				<ElTree
 					v-else
 					ref="tree"
-					@node-click="onClickTreeNode"
 					:data="treeNode"
 					:highlight-current="true"
 					:default-expanded-keys="[1, 2]"
 					:expand-on-click-node="false"
 					:filter-node-method="filterNode"
+					@node-click="onClickTreeNode"
 				></ElTree>
 				
 			</ElAside>
-			<ElMain class="main">
-				<ElButton @click="inspectNode" type="primary" icon="el-icon-view" size="mini" round>Print</ElButton>
+			<ElMain class="middle">
+				<ElButton @click="printNode" type="primary" icon="el-icon-view" size="mini" round>Print</ElButton>
 				<h3 class="title">Components</h3>
 				<div v-if="nodeComps">
 					<table
@@ -147,164 +147,15 @@
 				</ElTable>
 			</ElMain>
 			<ElAside class="right">
-				<Box :bound="bound"></Box>
+				<Box :bound="bound" @box-show="projectNodeToInspectLayer" @box-hide="disableNodeToInspectLayer"></Box>
 			</ElAside>
 		</ElContainer>
 	</div>
 </template>
-<style lang="scss">
-%column {
-	display: flex;
-	flex-direction: column;
-	justify-content: space-between;
-	align-items: center;
-	height: 70px;
-	padding: 10px;
-	box-sizing: border-box;
-	&:hover {
-		cursor: pointer;
-		background-color: #d9ecff;
-	}
-}
-.main {
-	height: 100%;
-	.title {
-		color: #409EFF;
-	}
-	.header {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		height: 70px !important;
-		padding: 0;
-		box-shadow: 0 0 8px rgba(0,0,0,0.15);
-		.title {
-			display: flex;
-			align-items: center;
-			height: 70px;
-			.logo {
-				width: 48px;
-				height: 48px;
-				margin-right: 1em;
-			}
-		}
-		.features {
-			display: flex;
-			padding: 10px 0 10px 10px;
-			.switchs {
-				display: flex;
-			}
-			.switch {
-				@extend %column;
-				span {
-					font-size: 14px;
-				}
-			}
-			.buttons {
-				display: flex;
-				justify-content: center;
-				align-items: center;
-				.btn {
-					.el-tooltip {
-						@extend %column;
-					}
-					span {
-						font-size: 14px;
-					}
-				}
-				i[class^=el-icon-] {
-					font-size: 14px;
-				}
-				.el-button--small.is-circle {
-					padding: 6px;
-				}
-			}
-		}
-	}
-	.container {
-		height: calc(100% - 70px);
-		.left, .right {
-			display: flex;
-			flex-direction: column;
-			padding: 10px 10px 0 10px;
-			.el-input {
-				flex-shrink: 0;
-			}
-			.el-tree {
-				flex-grow: 1;
-				overflow: scroll;
-			}
-		}
-		.left {
-			position: relative;
-			flex-grow: 0;
-			flex-shrink: 0;
-			border-right: 1px solid rgba(0,0,0,0.15);
-			box-sizing: border-box;
-			.loading {
-				font-size: 36px;
-				position: absolute;
-				top: 200px;
-				left: 138px;
-			}
-		}
-		.right {
-			flex: 1;
-		}
-		.main {
-			width: 540px;
-			flex-grow: 0;
-			flex-shrink: 0;
-			border-right: 1px solid rgba(0,0,0,0.15);
-			box-sizing: border-box;
-			overflow: scroll;
-		}
-	}
-	.el-input-number > span[role="button"]:first-child{
-		margin: 1px 0 0 1px;
-	}
-	.el-color-picker__color-inner {
-		top: 1px;
-		left: 1px;
-	}
-	.comp-table {
-		border-collapse: collapse;
-		.inspect-btn {
-			text-align: right;
-		}
-		th, td {
-			padding: 0.5em 1em !important;
-		}
-	}
-	.el-table {
-		margin-bottom: 1em;
-		&::before {
-			display: none;
-		}
-		td {
-			padding: 2px;
-		}
-		th {
-			background-color: #efefef;
-		}
-	}
-	.el-tree-node.is-current {
-		position: relative;
-		&::before {
-			content: "$n0";
-			position: absolute;
-			top: 0.5em;
-			right: 4px;
-			color: #b7b7b7;
-		}
-	}
-}
-</style>
 
 <script>
 import Box from './Box.vue';
-import injectedScript from '../injected';
-import { log } from '../utils';
+import { log, error, warn } from '../assets/utils';
 export default {
 	name: "App",
 	mixins: [],
@@ -322,8 +173,7 @@ export default {
 			inputNumberStep: 1,
 			showLoading: false, // 显示loading
 			timer: 0,
-			bound: {},
-			ccDevtoolId: 0 // ccdevtool id
+			bound: {}
 		};
 	},
 	mounted() {
@@ -342,20 +192,19 @@ export default {
 		}
 	},
 	methods: {
+		// 创建与background.js的连接
 		connect() {
 			this.inspectedWindow = chrome.devtools.inspectedWindow;
 			this.tabId = chrome.devtools.inspectedWindow.tabId;
-			this.conn = chrome.runtime.connect({
+			this.port = chrome.runtime.connect({
 				name: `${this.tabId}`
 			});
 			log(`Connecting to window ${this.tabId}`);
-			this.conn.onMessage.addListener(message => {
+			this.port.onMessage.addListener(message => {
 				if (!message) return;
-				log(message);
 				switch (message.name) {
 					case 'cc-devtool: panel-shown':
 						this.onPanelShown();
-						this.postMessage('cc-devtool: check-ccid');
 						break;
 					case 'cc-devtool: panel-hidden':
 						this.onPanelHidden();
@@ -365,7 +214,7 @@ export default {
 						break;
 					case 'cc-devtool: game-show':
 					case 'cc-devtool: lauch-scene':
-						this.injectPromise
+						this.initCCDevtool()
 							.then(() => {
 								this.loadTreeNodes();
 							});
@@ -374,36 +223,52 @@ export default {
 			});
 			this.postMessage('cc-devtool: panel-created');
 		},
+		// 断开与background.js的连接
+		disconnect() {
+			const port = this.port;
+			port.disconnect();
+		},
+		// 发送消息
 		postMessage(messageName) {
-			const { conn, tabId } = this;
-			conn.postMessage({
+			const { port, tabId } = this;
+			port.postMessage({
+				source: 'devtool',
 				name: messageName,
 				tabId
 			});
 		},
+		// 初始化ccdevtool
 		init() {
-			this.injectPromise = this.injectScript();
-			this.injectPromise
+			this.initCCDevtoolPromise = this.initCCDevtool();
+			this.initCCDevtoolPromise
 				.then(() => {
 					this.loadTreeNodes();
 				});
 		},
+		/**
+		 * @description 执行代码块
+		 * @param {String} code 代码片段
+		 */
 		eval(code) {
 			return new Promise((resolve, reject) => {
 				try {
-					this.inspectedWindow.eval(code, res => {
-						if (res) log(res);
-						resolve(res);
+					this.inspectedWindow.eval(code, (res, err) => {
+						err ? reject(err) : resolve(res);
 					});
 				} catch (e) {
-					log(e);
+					error(code, e);
 					reject(e);
 				}
 			});
 		},
+		// 重新加载插件
 		reload() {
 			location.reload();
 		},
+		/**
+		 * @description 判断节点属性类型
+		 * @param {String} key 属性名
+		 */
 		checkPropValueType({ key = '' }) {
 			if (['uuid', 'name'].indexOf(key) > -1) {
 				return 1;
@@ -474,52 +339,46 @@ export default {
 		refreshTree() {
 			this.loadTreeNodes();
 		},
-		// 调试节点
-		inspectNode() {
-			if (this.selectedNode) this.ccdevtool.inspectNode(this.selectedNode.uuid);
+		// 打印节点
+		printNode() {
+			if (this.selectedNode) {
+				this.ccdevtool.printNode(this.selectedNode.uuid);
+			}
 		},
 		// 调试组件
 		inspectComponent(row) {
 			this.ccdevtool.inspectComponent(row.uuid, row.index);
 		},
-		// 注入脚本
-		injectScript() {
-			// inject ccdevtool
-			const fn = injectedScript.toString();
-			const js = `(${fn})();`;
-			this.eval(js)
-				.then(() => log("ccdevtool injected!"));
+		initCCDevtool() {
 			let tryTimes = 60;
 			const vm = this;
 			const doEval = function() {
-				vm.eval("ccdevtool")
+				vm.eval('window.checkCCDevtool && window.checkCCDevtool()')
 					.then(ccdevtool => {
-						if (vm.ccdevtool) {
-							return;
+						if (ccdevtool) {
+							vm.ccdevtool = {};
+							for (let name in ccdevtool) {
+								vm.ccdevtool[name] = function(...args) {
+									args = JSON.stringify(args).slice(1, -1);
+									return vm.eval(`ccdevtool.${name}(${args})`);
+								};
+							}
 						}
-						vm.ccdevtool = {};
-						vm.ccDevtoolId++;
-						vm.ccdevtool.id = vm.ccDevtoolId;
-						for (let name in ccdevtool) {
-							vm.ccdevtool[name] = function(...args) {
-								args = JSON.stringify(args).slice(1, -1);
-								return vm.eval(`ccdevtool.${name}(${args})`);
-							};
-						}
-						// 向window.cc注入id属性
-						vm.eval(`window.cc.ccId=${vm.ccDevtoolId}`);
+					})
+					.catch(err => {
+						error(err);
 					});
 			};
 			return new Promise((resolve, reject) => {
-				let timer = 0;
+				this.timer = 0;
 				const checkCCDevtool = () => {
 					doEval();
 					tryTimes -= 1;
-					if (tryTimes <= 0 || (vm.ccdevtool && Object.keys(vm.ccdevtool).length > 0)) {
-						timer && clearTimeout(timer);
+					if (tryTimes <= 0 || vm.ccdevtool) {
+						this.timer && clearTimeout(this.timer);
 						resolve();
 					} else {
-						timer = setTimeout(checkCCDevtool, 1000);
+						this.timer = setTimeout(checkCCDevtool, 1000);
 					}
 				}
 				checkCCDevtool();
@@ -532,7 +391,214 @@ export default {
 		// hidden
 		onPanelShown() {
 			this.isShowInspectLayer = true;
+		},
+		beforeDestoryed() {
+			this.disconnect();
+			clearTimeout(this.timer);
+		},
+		/**
+		 * @description 在inspect layer上显示节点
+		 * @param {uuid} String 节点的uuid
+		 */
+		projectNodeToInspectLayer(uuid = '') {
+			if (uuid && this.isShowInspectLayer) {
+				this.ccdevtool.projectNodeToInspectLayer(uuid);
+			}
+		},
+		disableNodeToInspectLayer(uuid = '') {
+			if (uuid && this.isShowInspectLayer) {
+				this.ccdevtool.disableNodeToInspectLayer(uuid);
+			}
 		}
 	}
 };
 </script>
+
+<style lang="scss">
+%column {
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+	align-items: center;
+	height: 70px;
+	padding: 10px;
+	box-sizing: border-box;
+	&:hover {
+		cursor: pointer;
+		background-color: #d9ecff;
+	}
+}
+.main {
+	.title {
+		color: #409EFF;
+	}
+	.header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		height: 70px !important;
+		padding: 0;
+		box-shadow: 0 0 8px rgba(0,0,0,0.15);
+		font-size: 12px;
+		text-align: center;
+		.title {
+			display: flex;
+			align-items: center;
+			height: 70px;
+			.logo {
+				flex-shrink: 0;
+				width: 48px;
+				height: 48px;
+				margin-right: 1em;
+			}
+		}
+		.features {
+			display: flex;
+			padding: 10px 0 10px 10px;
+			.switchs {
+				display: flex;
+			}
+			.switch {
+				@extend %column;
+			}
+			.buttons {
+				display: flex;
+				justify-content: center;
+				align-items: center;
+				.btn {
+					.el-tooltip {
+						@extend %column;
+					}
+				}
+				i[class^=el-icon-] {
+					font-size: 14px;
+				}
+				.el-button--small.is-circle {
+					padding: 6px;
+				}
+			}
+		}
+	}
+	.container {
+		height: calc(100vh - 70px);
+		.left, .right {
+			display: flex;
+			flex-direction: column;
+			height: 100%;
+			padding: 10px 10px 0 10px;
+			.el-input {
+				flex-shrink: 0;
+			}
+			.el-tree {
+				flex-grow: 1;
+				overflow: scroll;
+			}
+		}
+		.left {
+			flex-grow: 0;
+			flex-shrink: 0;
+		}
+		.right {
+			flex-grow: 1;
+			flex-shrink: 1;
+		}
+		.left {
+			position: relative;
+			border-right: 1px solid rgba(0,0,0,0.15);
+			box-sizing: border-box;
+			.loading {
+				font-size: 36px;
+				position: absolute;
+				top: 200px;
+				left: 138px;
+			}
+		}
+		.middle {
+			width: 540px;
+			height: 100%;
+			flex-grow: 0;
+			flex-shrink: 0;
+			border-right: 1px solid rgba(0,0,0,0.15);
+			box-sizing: border-box;
+			overflow: scroll;
+		}
+	}
+	.el-input-number > span[role="button"]:first-child{
+		margin: 1px 0 0 1px;
+	}
+	.el-color-picker__color-inner {
+		top: 1px;
+		left: 1px;
+	}
+	.comp-table {
+		border-collapse: collapse;
+		.inspect-btn {
+			text-align: right;
+		}
+		th, td {
+			padding: 0.5em 1em !important;
+		}
+	}
+	.el-table {
+		margin-bottom: 1em;
+		&::before {
+			display: none;
+		}
+		td {
+			padding: 2px;
+		}
+		th {
+			background-color: #efefef;
+		}
+	}
+	.el-tree-node.is-current {
+		position: relative;
+		&::before {
+			content: "$n0";
+			position: absolute;
+			top: 0.5em;
+			right: 4px;
+			color: #b7b7b7;
+		}
+	}
+}
+@media screen and (max-width: 460px){
+	.main {
+		.header {
+			.title > a {
+				display: none;
+			}
+			.text-tip {
+				display: none;
+			}
+			.switch {
+				justify-content: center !important;
+			}
+			.btn .el-tooltip {
+				justify-content: center !important;
+			}
+		}
+		.container {
+			.left {
+				flex-grow: 1;
+			}
+			.middle, .right {
+				display: none;
+			}
+		}
+	}
+}
+@media screen and (max-width: 840px) {
+	.main {
+		.container {
+			.middle {
+				flex-shrink: 1;
+			}
+			.right {
+				display: none;
+			}
+		}
+	}
+	
+}
+</style>

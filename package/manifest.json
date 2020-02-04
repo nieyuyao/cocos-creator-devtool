@@ -2,7 +2,7 @@
     "manifest_version": 2,
     "name": "CocosCreator Inspector",
     "description": "Developer Tools for inspecting and debugging games written with CocosCreator",
-    "version": "1.0",
+    "version": "0.1",
     "icons": {
       "32": "icons/icon-32.png",
       "48": "icons/icon-48.png",
@@ -35,6 +35,11 @@
         "background.bundle.js"
       ],
       "persistent": true
-    }
+    },
+    "web_accessible_resources": [
+      "devtools.html",
+      "devtools-background.html",
+      "injected.bundle.js"
+    ]
   }
   
