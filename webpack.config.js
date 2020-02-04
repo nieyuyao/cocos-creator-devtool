@@ -82,7 +82,8 @@ const baseConfig = {
 				include: /\.js$/,
 				uglifyOptions: {
 					compress: {
-						drop_console: true,
+						// drop_console: true,
+						pure_funcs: ['console.log', 'console.error'],
 						drop_debugger: true
 					}
 				}

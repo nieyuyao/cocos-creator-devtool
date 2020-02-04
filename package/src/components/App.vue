@@ -339,7 +339,7 @@ export default {
 		refreshTree() {
 			this.loadTreeNodes();
 		},
-		// 调试节点
+		// 打印节点
 		printNode() {
 			if (this.selectedNode) {
 				this.ccdevtool.printNode(this.selectedNode.uuid);

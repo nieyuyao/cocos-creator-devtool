@@ -149,7 +149,6 @@ function initCCDevtool() {
 				worldPosition.y - node.height * anchorY
 			));
 			return {
-				worldPosition,
 				leftTop,
 				rightTop,
 				leftBottom,
@@ -412,8 +411,16 @@ function initCCDevtool() {
 				bound.localBound.bottom = localBound.yMin + pAnchorY * pH;
 				bound.localBound.left = localBound.xMin + pAnchorX * pW;
 				bound.localBound.right = (1 - pAnchorX) * pW - (localBound.xMin + localBound.width);
-				// 屏幕坐标
+				// 屏幕位置
 				bound.screenBound = this.getScreenPosition(node);
+			} else {
+				// 场景
+				bound.screenBound = {
+					leftTop: this.convertWorldToScreen(new cc.Vec2(0, canvasNodeHeight)),
+					rightTop: this.convertWorldToScreen(new cc.Vec2(canvasNodeWidth, canvasNodeHeight)),
+					leftBottom: this.convertWorldToScreen(new cc.Vec2(0, 0)),
+					rightBottom: this.convertWorldToScreen(new cc.Vec2(canvasNodeWidth, 0))
+				}
 			}
 			/**
 			 * Cache node in some place other than NodesCacheData
