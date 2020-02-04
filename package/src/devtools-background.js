@@ -3,15 +3,19 @@ const icon = "icons/icon-32.png";
 const html = "devtools.html";
 
 function onPanelShown() {
-	chrome.runtime.sendMessage({
-		name: 'cc-devtool: panel-shown'
-	});
+	try {
+		chrome.runtime.sendMessage({
+			name: 'cc-devtool: panel-shown'
+		});
+	} catch(e) {}
 }
 
 function onPanelHidden() {
-	chrome.runtime.sendMessage({
-		name: 'cc-devtool: panel-hidden'
-	});
+	try {
+		chrome.runtime.sendMessage({
+			name: 'cc-devtool: panel-hidden'
+		});
+	} catch(e) {}
 }
 
 function createCocosCreatorDevtoolPanel() {
