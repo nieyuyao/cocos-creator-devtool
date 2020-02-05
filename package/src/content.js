@@ -5,7 +5,7 @@
  */
 
 // 监听来自injected脚本的消息
-window.addEventListener('message', event => {
+function onMessage(event) {
     let hasCocosGameCanvas = !!document.querySelector('#GameCanvas');
     if (!hasCocosGameCanvas) {
         const nodes = [].slice.call(document.querySelectorAll('canvas'));
@@ -17,11 +17,10 @@ window.addEventListener('message', event => {
     }
     const { source, data } = event;
     if (source === window && hasCocosGameCanvas) {
-        chrome.runtime.sendMessage(data);
+        // if unload or upgrade extension then error
+        try {
+            chrome.runtime.sendMessage(data);
+        } catch(e) {}
     }
-});
-
-// 监听来自background脚本的消息
-chrome.runtime.onMessage.addListener(message => {
-    //
-});
+}
+window.addEventListener('message', onMessage);
