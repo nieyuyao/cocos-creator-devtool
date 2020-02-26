@@ -28,7 +28,7 @@ function registerEvents() {
 	cc.director.on(cc.Director.EVENT_BEFORE_SCENE_LOADING, () => {
 		timelines.push({
 			time: +new Date() - now,
-			desc: "加载场景"
+			desc: "开始加载场景"
 		});
 	});
 	cc.director.on(cc.Director.EVENT_BEFORE_SCENE_LAUNCH, () => {
@@ -54,7 +54,6 @@ function initCCDevtool() {
 				time: +new Date() - now,
 				desc: "场景已经启动"
 			});
-			console.log(timelines);
 			this.postMessage("cc-devtool: lauch-scene", timelines);
 		},
 		onGameShow() {
@@ -107,6 +106,55 @@ function initCCDevtool() {
 				console.log(err);
 			}
 			return ret;
+		},
+		/**
+		 * @description 
+		 */
+		getCaches() {
+			const caches = [];
+			if (cc.loader && cc.loader._cache) {
+				for (let key in cc.loader._cache) {
+					const item = cc.loader._cache[key];
+					if (/(jpg|jpeg|png)/.test(item.type)) {
+						continue;
+					}
+					let itemName = '-';
+					let itemSize = '-';
+					let itemType = '-';
+					let preview = '-';
+					if (item.type === 'js' || item.type === 'json') {
+						const splits = item.url.split('/');
+						if (splits && splits.length) {
+							itemName = splits[splits.length - 1];
+						}
+						itemType = item.type;
+					} else if (item.type === 'uuid') {
+						const content = item.content;
+						itemType = content.__classname__;
+						itemName = content.name;
+						if (itemType === 'cc.Texture2D') {
+							itemName = item._owner.name;
+							const img = content._image;
+							const { width, height } = img;
+							const ratio = img.src.indexOf('.jpg') === 'jpg' ? 3 : 4;
+							const size = width * height * ratio;
+							if (size > 1024) {
+								itemSize = Math.round(size / 1024) + 'KB';
+							} else {
+								itemSize = size + 'B';
+							}
+							preview = img.src;
+						}
+					}
+					caches.push({
+						type: itemType,
+						name: itemName,
+						size: itemSize,
+						preview
+					})
+				}
+			}
+			return caches;
 		},
 		/**
 		 * Post message to content script and then forward message to cc-devtool

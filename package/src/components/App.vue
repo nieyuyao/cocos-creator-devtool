@@ -3,7 +3,7 @@
 		<!-- 顶部 -->
 		<ElHeader class="header">
 			<div class="title">
-				<img class="logo" src="../../icons/icon-128.png" />
+				<img class="logo" src="../../icons/icon-128.png"/>
 				<a href="https://docs.cocos.com/creator/manual/zh/" target="_blank">Cocos Creator Inpsector</a>
 			</div>
 			<!-- 功能按钮等 -->
@@ -19,6 +19,12 @@
 						<ElSwitch v-model="isShowInspectLayer" active-color="#13ce66"></ElSwitch>
 						<ElTooltip effect="dark" content="Show Inspect Layer/显示调试层" placement="bottom">
 							<span class="text-tip">Inspect</span>
+						</ElTooltip>
+					</div>
+					<div class="switch">
+						<ElSwitch v-model="isShowCacheDetail" active-color="#13ce66"></ElSwitch>
+						<ElTooltip effect="dark" content="Show Cache Detail/显示缓存列表" placement="bottom">
+							<span class="text-tip">Show Caches</span>
 						</ElTooltip>
 					</div>
 				</div>
@@ -45,124 +51,130 @@
 				</div>
 			</div>
 		</ElHeader>
+		<!-- 游戏加载时间线 -->
 		<TimeLine :periods="periods"></TimeLine>
-		<ElContainer class="container">
-			<!-- 左边栏 -->
-			<ElAside class="left">
-				<ElInput v-model="filterText" size="mini" clearable placeholder="Node name" prefix-icon="el-icon-search"></ElInput>
-				<div class="loading" v-if="showLoading">
-					<span>
-						<i class="el-icon-loading"></i>
-					</span>
-				</div>
-				<ElTree
-					v-else
-					ref="tree"
-					:data="treeNode"
-					:highlight-current="true"
-					:default-expanded-keys="[1, 2]"
-					:expand-on-click-node="false"
-					:filter-node-method="filterNode"
-					@node-click="onClickTreeNode"
-				></ElTree>
-				
-			</ElAside>
-			<ElMain class="middle">
-				<ElButton @click="printNode" type="primary" icon="el-icon-view" size="mini" round>Print</ElButton>
-				<h3 class="title">Components</h3>
-				<div v-if="nodeComps">
-					<table
-						class="el-table comp-table"
-						v-for="comp in nodeComps"
-						:key="comp.uuid"
-					>
-						<colgroup>
-							<col style="width: 200px;" />
-							<col style="width: 300px;" />
-						</colgroup>
-						<thead>
-							<tr>
-								<th v-text="comp.key"></th>
-								<th class="inspect-btn">
-									<ElButton
-										@click="inspectComponent(comp)"
-										size="mini"
-										type="normal"
-										icon="el-icon-view"
-										round
-									>Print</ElButton>
-								</th>
-							</tr>
-						</thead>
-						<tbody>
-							<tr v-for="prop in comp.props" :key="prop.name">
-								<td v-text="prop.name"></td>
-								<td>
-									<component
-										v-if="prop.type"
-										:is="prop.type"
-										:data-raw-type="prop.rawType"
-										v-model="prop.value"
-										size="mini"
-									></component>
-									<span v-else-if="!prop.value"></span>
-									<span v-else v-text="prop.value"></span>
-								</td>
-							</tr>
-						</tbody>
-					</table>
-				</div>
-				<h3 class="title">Properties</h3>
-				<ElTable :data="nodeProps" stripe>
-					<ElTableColumn prop="key" label="Property" :width="200"></ElTableColumn>
-					<ElTableColumn prop="key" label="Value" :width="300">
-						<template slot-scope="scope">
-							<!-- string -->
-							<span v-if="checkPropValueType(scope.row) === 1">
-								{{scope.row.value}}
-							</span>
-							<!-- number -->
-							<ElInputNumber
-								v-else-if="checkPropValueType(scope.row) === 2"
-								size="mini"
-								:step="inputNumberStep"
-								v-model="scope.row.value"
-								@change="onPropChange(scope.row)"
-							></ElInputNumber>
-							<!-- color -->
-							<ElColorPicker
-								v-else-if="checkPropValueType(scope.row) === 3"
-								size="mini"
-								v-model="scope.row.value"
-								@change="onPropChange(scope.row)"
-							></ElColorPicker>
-							<!-- active -->
-							<ElSwitch
-								v-else-if="checkPropValueType(scope.row) === 4"
-								size="mini"
-								v-model="scope.row.value"
-								@change="onPropChange(scope.row)"
-							></ElSwitch>
-						</template>
-					</ElTableColumn>
-				</ElTable>
-			</ElMain>
-			<ElAside class="right">
-				<Box :bound="bound" @box-show="projectNodeToInspectLayer" @box-hide="disableNodeToInspectLayer"></Box>
-			</ElAside>
-		</ElContainer>
+		<div class="bottom">
+			<ElContainer class="container">
+				<!-- 左边栏 -->
+				<ElAside class="left">
+					<ElInput v-model="filterText" size="mini" clearable placeholder="Node name" prefix-icon="el-icon-search"></ElInput>
+					<div class="loading" v-if="showLoading">
+						<span>
+							<i class="el-icon-loading"></i>
+						</span>
+					</div>
+					<ElTree
+						v-else
+						ref="tree"
+						:data="treeNode"
+						:highlight-current="true"
+						:default-expanded-keys="[1, 2]"
+						:expand-on-click-node="false"
+						:filter-node-method="filterNode"
+						@node-click="onClickTreeNode"
+					></ElTree>
+					
+				</ElAside>
+				<ElMain class="middle">
+					<ElButton @click="printNode" type="primary" icon="el-icon-view" size="mini" round>Print</ElButton>
+					<h3 class="title">Components</h3>
+					<div v-if="nodeComps">
+						<table
+							class="el-table comp-table"
+							v-for="comp in nodeComps"
+							:key="comp.uuid"
+						>
+							<colgroup>
+								<col style="width: 200px;" />
+								<col style="width: 300px;" />
+							</colgroup>
+							<thead>
+								<tr>
+									<th v-text="comp.key"></th>
+									<th class="inspect-btn">
+										<ElButton
+											@click="inspectComponent(comp)"
+											size="mini"
+											type="normal"
+											icon="el-icon-view"
+											round
+										>Print</ElButton>
+									</th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr v-for="prop in comp.props" :key="prop.name">
+									<td v-text="prop.name"></td>
+									<td>
+										<component
+											v-if="prop.type"
+											:is="prop.type"
+											:data-raw-type="prop.rawType"
+											v-model="prop.value"
+											size="mini"
+										></component>
+										<span v-else-if="!prop.value"></span>
+										<span v-else v-text="prop.value"></span>
+									</td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+					<h3 class="title">Properties</h3>
+					<ElTable :data="nodeProps" stripe>
+						<ElTableColumn prop="key" label="Property" :width="200"></ElTableColumn>
+						<ElTableColumn prop="key" label="Value" :width="300">
+							<template slot-scope="scope">
+								<!-- string -->
+								<span v-if="checkPropValueType(scope.row) === 1">
+									{{scope.row.value}}
+								</span>
+								<!-- number -->
+								<ElInputNumber
+									v-else-if="checkPropValueType(scope.row) === 2"
+									size="mini"
+									:step="inputNumberStep"
+									v-model="scope.row.value"
+									@change="onPropChange(scope.row)"
+								></ElInputNumber>
+								<!-- color -->
+								<ElColorPicker
+									v-else-if="checkPropValueType(scope.row) === 3"
+									size="mini"
+									v-model="scope.row.value"
+									@change="onPropChange(scope.row)"
+								></ElColorPicker>
+								<!-- active -->
+								<ElSwitch
+									v-else-if="checkPropValueType(scope.row) === 4"
+									size="mini"
+									v-model="scope.row.value"
+									@change="onPropChange(scope.row)"
+								></ElSwitch>
+							</template>
+						</ElTableColumn>
+					</ElTable>
+				</ElMain>
+				<ElAside class="right">
+					<Box :bound="bound" @box-show="projectNodeToInspectLayer" @box-hide="disableNodeToInspectLayer"></Box>
+				</ElAside>
+			</ElContainer>
+			<Caches v-if="isShowCacheDetail" class="caches" :caches="caches"></Caches>
+		</div>
 	</div>
 </template>
 
 <script>
 import Box from './Box.vue';
 import TimeLine from './TimeLine.vue';
+import Caches from './Caches.vue';
 export default {
 	name: "App",
 	mixins: [],
 	components: {
 		Box,
-		TimeLine
+		TimeLine,
+		Caches
 	},
 	data() {
 		return {
@@ -176,7 +188,16 @@ export default {
 			showLoading: false, // 显示loading
 			timer: 0,
 			bound: {},
-			periods: []
+			periods: [],
+			isShowCacheDetail: false,
+			caches: [
+				{
+					type: 'Sprite',
+					name: '头像',
+					size: '-',
+					preview: '../../icons/icon-128.png'
+				}
+			]
 		};
 	},
 	mounted() {
@@ -483,8 +504,13 @@ export default {
 			}
 		}
 	}
-	.container {
+	.bottom {
 		height: calc(100vh - 160px);
+		display: flex;
+		flex-direction: column;
+	}
+	.container {
+		flex-grow: 1;
 		.left, .right {
 			display: flex;
 			flex-direction: column;
@@ -526,6 +552,12 @@ export default {
 			box-sizing: border-box;
 			overflow: scroll;
 		}
+	}
+	.caches {
+		flex-shrink: 1;
+		flex-grow: 1;
+		height: 160px;
+		overflow-y: scroll;
 	}
 	.el-input-number > span[role="button"]:first-child{
 		margin: 1px 0 0 1px;
