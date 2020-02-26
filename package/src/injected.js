@@ -11,6 +11,15 @@ function initCCDevtool() {
 	const ccdevtool = {
 		nodeId: 1,
 		stats: null,
+		onLauchScene() {
+			this.postMessage("cc-devtool: lauch-scene");
+		},
+		onGameShow() {
+			this.postMessage("cc-devtool: game-show");
+		},
+		onGameHide() {
+			this.postMessage("cc-devtool: game-hide");
+		},
 		/**
 		 * Load tree node data
 		 * @return {Object} node data in JSON
@@ -34,6 +43,11 @@ function initCCDevtool() {
 						canvasNodeHeight = scene.children[0].height;
 					}
 					ret = this.serialize(scene, true);
+				} else {
+					// 此时场景还未加载完全
+					if (!cc.director.hasEventListener(cc.Director.EVENT_AFTER_SCENE_LAUNCH)) {
+						cc.director.on(cc.Director.EVENT_AFTER_SCENE_LAUNCH, this.onLauchScene, this);
+					}
 				}
 			} catch (err) {
 				console.error(err);
@@ -442,37 +456,24 @@ function initCCDevtool() {
 		}
 	};
 	window.ccdevtool = ccdevtool;
-	/**
-	 * Hijack cc.director.loadScene()
-	 * when loadScene is called, notify cc-devtool panel to refresh node tree
-	 */
-	if (cc.director) {
-		cc.director.on(cc.Director.EVENT_AFTER_SCENE_LAUNCH, () => {
-			ccdevtool.postMessage("cc-devtool: lauch-scene");
-		});
+	if (cc.director && !cc.director.hasEventListener(cc.Director.EVENT_AFTER_SCENE_LAUNCH)) {
+		cc.director.on(cc.Director.EVENT_AFTER_SCENE_LAUNCH, ccdevtool.onLauchScene, ccdevtool);
 	}
 	if (cc && cc.game) {
 		if (!cc.game.hasEventListener("game_on_show")) {
-			cc.game.on("game_on_show", function () {
-				ccdevtool.postMessage("cc-devtool: game-show");
-			});
+			cc.game.on("game_on_show", ccdevtool.onGameShow, ccdevtool);
 		}
 		if (!cc.game.hasEventListener("game_on_hide")) {
-			cc.game.on("game_on_hide", function () {
-				ccdevtool.postMessage("cc-devtool: game-hide");
-			});
+			cc.game.on("game_on_hide", ccdevtool.onGameHide, ccdevtool);
 		}
 	}
-	/**
-	 * print a nice-looking notification if this file injected
-	 */
+	ccdevtool.postMessage("cc-devtool: cc-found");
 	console.log(
 		`%c cc-devtools %c Detected Cocos Creator Game %c`,
 		"background:#35495e; padding: 1px; border-radius: 2px 0 0 2px; color: #fff",
 		"background:#409EFF; padding: 1px; border-radius: 0 2px 2px 0; color: #fff",
 		"background:transparent"
 	);
-	ccdevtool.postMessage("cc-devtool: cc-found");
 	return ccdevtool;
 }
 window.checkCCDevtool = function() {
@@ -480,7 +481,7 @@ window.checkCCDevtool = function() {
 	if (ccdevtool) {
 		return ccdevtool;
 	}
-	if (cc) {
+	if (cc && cc.director) {
 		return initCCDevtool();
 	}
 }

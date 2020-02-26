@@ -83,7 +83,7 @@ const baseConfig = {
 				uglifyOptions: {
 					compress: {
 						// drop_console: true,
-						pure_funcs: ['console.log', 'console.error'],
+						// pure_funcs: ['console.log', 'console.error'],
 						drop_debugger: true
 					}
 				}
