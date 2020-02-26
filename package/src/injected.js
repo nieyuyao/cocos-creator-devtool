@@ -1,8 +1,46 @@
-import { SerializeProps, InspectLayerInfo, StatsLayerId } from './assets/constants';
-import { getComponentsData, hexToRgb } from './assets/utils';
-import Stats from './help/Stats';
+import {
+	SerializeProps,
+	InspectLayerInfo,
+	StatsLayerId
+} from "./assets/constants";
+import {
+	getComponentsData,
+	hexToRgb
+} from "./assets/utils";
+import Stats from "./help/Stats";
 const NodesCache = {}; // Node cache which contains cc.Node refs 保存的是节点
 const NodesCacheData = {}; // Node data cache 序列化后的节点信息
+const timelines = [];
+const now = +new Date();
+timelines.push({
+	time: 0,
+	desc: "Start"
+});
+/**
+ * @description 注册事件
+ */
+function registerEvents() {
+	cc.director.on(
+		cc.Director.EVENT_AFTER_SCENE_LAUNCH,
+		ccdevtool.onLauchScene,
+		ccdevtool
+	);
+	cc.director.on(cc.Director.EVENT_BEFORE_SCENE_LOADING, () => {
+		timelines.push({
+			time: +new Date() - now,
+			desc: "加载场景"
+		});
+	});
+	cc.director.on(cc.Director.EVENT_BEFORE_SCENE_LAUNCH, () => {
+		timelines.push({
+			time: +new Date() - now,
+			desc: "开始运行场景"
+		});
+	});
+}
+/**
+ * @description 初始化ccdevtool
+ */
 function initCCDevtool() {
 	let canvasWidth = 0;
 	let canvasHeight = 0;
@@ -12,7 +50,12 @@ function initCCDevtool() {
 		nodeId: 1,
 		stats: null,
 		onLauchScene() {
-			this.postMessage("cc-devtool: lauch-scene");
+			timelines.push({
+				time: +new Date() - now,
+				desc: "场景已经启动"
+			});
+			console.log(timelines);
+			this.postMessage("cc-devtool: lauch-scene", timelines);
 		},
 		onGameShow() {
 			this.postMessage("cc-devtool: game-show");
@@ -45,12 +88,23 @@ function initCCDevtool() {
 					ret = this.serialize(scene, true);
 				} else {
 					// 此时场景还未加载完全
-					if (!cc.director.hasEventListener(cc.Director.EVENT_AFTER_SCENE_LAUNCH)) {
-						cc.director.on(cc.Director.EVENT_AFTER_SCENE_LAUNCH, this.onLauchScene, this);
+					const afterSceneCbs =
+						cc.director._bubblingListeners._callbackTable[
+							cc.Director.EVENT_AFTER_SCENE_LAUNCH
+						].callbacks;
+					if (
+						afterSceneCbs &&
+						afterSceneCbs.indexOf(this.onLauchScene) === -1
+					) {
+						cc.director.on(
+							cc.Director.EVENT_AFTER_SCENE_LAUNCH,
+							this.onLauchScene,
+							this
+						);
 					}
 				}
 			} catch (err) {
-				console.error(err);
+				console.log(err);
 			}
 			return ret;
 		},
@@ -110,8 +164,8 @@ function initCCDevtool() {
 		 * @description Create inspect layer
 		 */
 		createInspectLayer() {
-			const ccCanvas = document.getElementById('GameCanvas');
-			const inspectLayer = document.createElement('canvas');
+			const ccCanvas = document.getElementById("GameCanvas");
+			const inspectLayer = document.createElement("canvas");
 			inspectLayer.width = ccCanvas.width;
 			inspectLayer.height = ccCanvas.height;
 			const {
@@ -140,34 +194,45 @@ function initCCDevtool() {
 		 * @param {cc.Node} node 节点
 		 */
 		getScreenPosition(node) {
-			const { anchorX, anchorY } = node; 
+			const {
+				anchorX,
+				anchorY
+			} = node;
 			const worldPosition = node.convertToWorldSpaceAR();
 			// 左上角
-			const leftTop = this.convertWorldToScreen(new cc.Vec2(
-				worldPosition.x - node.width * anchorX,
-				worldPosition.y + node.height * (1 - anchorY)
-			));
+			const leftTop = this.convertWorldToScreen(
+				new cc.Vec2(
+					worldPosition.x - node.width * anchorX,
+					worldPosition.y + node.height * (1 - anchorY)
+				)
+			);
 			// 右上角
-			const rightTop = this.convertWorldToScreen(new cc.Vec2(
-				worldPosition.x + node.width * (1 - anchorX),
-				worldPosition.y + node.height * (1 - anchorY)
-			));
+			const rightTop = this.convertWorldToScreen(
+				new cc.Vec2(
+					worldPosition.x + node.width * (1 - anchorX),
+					worldPosition.y + node.height * (1 - anchorY)
+				)
+			);
 			// 左下角
-			const leftBottom = this.convertWorldToScreen(new cc.Vec2(
-				worldPosition.x - node.width * anchorX,
-				worldPosition.y - node.height * anchorY
-			));
+			const leftBottom = this.convertWorldToScreen(
+				new cc.Vec2(
+					worldPosition.x - node.width * anchorX,
+					worldPosition.y - node.height * anchorY
+				)
+			);
 			// 右下角
-			const rightBottom = this.convertWorldToScreen(new cc.Vec2(
-				worldPosition.x + node.width * (1 - anchorX),
-				worldPosition.y - node.height * anchorY
-			));
+			const rightBottom = this.convertWorldToScreen(
+				new cc.Vec2(
+					worldPosition.x + node.width * (1 - anchorX),
+					worldPosition.y - node.height * anchorY
+				)
+			);
 			return {
 				leftTop,
 				rightTop,
 				leftBottom,
 				rightBottom
-			}
+			};
 		},
 		/**
 		 * glPosition => screenPostion
@@ -180,8 +245,8 @@ function initCCDevtool() {
 			const glX = x / (canvasNodeWidth / 2);
 			const glY = y / (canvasNodeHeight / 2);
 			return new cc.Vec2(
-				(1 + glX) * canvasWidth / 2,
-				(1 - glY) * canvasHeight / 2
+				((1 + glX) * canvasWidth) / 2,
+				((1 - glY) * canvasHeight) / 2
 			);
 		},
 		/**
@@ -189,14 +254,24 @@ function initCCDevtool() {
 		 * @param {uuid} String 节点的uuid
 		 */
 		projectNodeToInspectLayer(uuid) {
-			const { id, color, textColor, textFont } = InspectLayerInfo;
+			const {
+				id,
+				color,
+				textColor,
+				textFont
+			} = InspectLayerInfo;
 			const inspectLayer = document.getElementById(id);
-			const ctx = inspectLayer.getContext('2d');
+			const ctx = inspectLayer.getContext("2d");
 			const node = NodesCacheData[uuid];
 			if (node) {
 				const screenBound = node.bound.screenBound;
 				ctx.clearRect(0, 0, inspectLayer.width, inspectLayer.height);
-				const { leftTop, rightTop, leftBottom, rightBottom } = screenBound;
+				const {
+					leftTop,
+					rightTop,
+					leftBottom,
+					rightBottom
+				} = screenBound;
 				ctx.beginPath();
 				ctx.moveTo(leftTop.x, leftTop.y);
 				ctx.lineTo(rightTop.x, rightTop.y);
@@ -207,15 +282,19 @@ function initCCDevtool() {
 				ctx.fill();
 				ctx.fillStyle = textColor;
 				ctx.font = textFont;
-				ctx.textAlign = 'center';
-				ctx.textBaseline = 'middle';
-				ctx.fillText(node.name, (leftTop.x + rightTop.x) / 2, (leftTop.y + leftBottom.y) / 2);
+				ctx.textAlign = "center";
+				ctx.textBaseline = "middle";
+				ctx.fillText(
+					node.name,
+					(leftTop.x + rightTop.x) / 2,
+					(leftTop.y + leftBottom.y) / 2
+				);
 			}
 		},
 		disableNodeToInspectLayer() {
 			const id = InspectLayerInfo.id;
 			const inspectLayer = document.getElementById(id);
-			const ctx = inspectLayer.getContext('2d');
+			const ctx = inspectLayer.getContext("2d");
 			ctx.clearRect(0, 0, inspectLayer.width, inspectLayer.height);
 		},
 		/**
@@ -237,7 +316,11 @@ function initCCDevtool() {
 			}
 			this.toggleElement(`#${StatsLayerId}`, true);
 			if (this.stats) {
-				cc.director.on(cc.Director.EVENT_BEFORE_UPDATE, this.beforeUpdate, this);
+				cc.director.on(
+					cc.Director.EVENT_BEFORE_UPDATE,
+					this.beforeUpdate,
+					this
+				);
 				cc.director.on(cc.Director.EVENT_AFTER_VISIT, this.afterVisit, this);
 				cc.director.on(cc.Director.EVENT_AFTER_DRAW, this.afterDraw, this);
 			}
@@ -421,20 +504,26 @@ function initCCDevtool() {
 					width: pW,
 					height: pH
 				} = node.parent;
-				bound.localBound.top = (1 - pAnchorY) * pH - (localBound.yMin + localBound.height);
+				bound.localBound.top =
+					(1 - pAnchorY) * pH - (localBound.yMin + localBound.height);
 				bound.localBound.bottom = localBound.yMin + pAnchorY * pH;
 				bound.localBound.left = localBound.xMin + pAnchorX * pW;
-				bound.localBound.right = (1 - pAnchorX) * pW - (localBound.xMin + localBound.width);
+				bound.localBound.right =
+					(1 - pAnchorX) * pW - (localBound.xMin + localBound.width);
 				// 屏幕位置
 				bound.screenBound = this.getScreenPosition(node);
 			} else {
 				// 场景
 				bound.screenBound = {
 					leftTop: this.convertWorldToScreen(new cc.Vec2(0, canvasNodeHeight)),
-					rightTop: this.convertWorldToScreen(new cc.Vec2(canvasNodeWidth, canvasNodeHeight)),
+					rightTop: this.convertWorldToScreen(
+						new cc.Vec2(canvasNodeWidth, canvasNodeHeight)
+					),
 					leftBottom: this.convertWorldToScreen(new cc.Vec2(0, 0)),
-					rightBottom: this.convertWorldToScreen(new cc.Vec2(canvasNodeWidth, 0))
-				}
+					rightBottom: this.convertWorldToScreen(
+						new cc.Vec2(canvasNodeWidth, 0)
+					)
+				};
 			}
 			/**
 			 * Cache node in some place other than NodesCacheData
@@ -443,7 +532,7 @@ function initCCDevtool() {
 			NodesCache[node.uuid] = node;
 			bound.uuid = node.uuid;
 			const ret = (NodesCacheData[node.uuid] = {
-				name: node.name || 'Anonymous',
+				name: node.name || "Anonymous",
 				id: this.nodeId++,
 				uuid: node.uuid,
 				label: node.name,
@@ -456,10 +545,28 @@ function initCCDevtool() {
 		}
 	};
 	window.ccdevtool = ccdevtool;
-	if (cc.director && !cc.director.hasEventListener(cc.Director.EVENT_AFTER_SCENE_LAUNCH)) {
-		cc.director.on(cc.Director.EVENT_AFTER_SCENE_LAUNCH, ccdevtool.onLauchScene, ccdevtool);
+	if (cc.director) {
+		registerEvents();
+	} else {
+		let _director = cc.director;
+		Object.defineProperty(cc, 'director', {
+			set(val) {
+				_director = val;
+				console.log('注册');
+				registerEvents();
+			},
+			get () {
+				return _director;
+			}
+		})
 	}
-	if (cc && cc.game) {
+	if (cc.game) {
+		cc.game.on(cc.game.EVENT_GAME_INITED, () => {
+			timelines.push({
+				time: +new Date() - now,
+				desc: "初始化游戏配置"
+			});
+		});
 		if (!cc.game.hasEventListener("game_on_show")) {
 			cc.game.on("game_on_show", ccdevtool.onGameShow, ccdevtool);
 		}
@@ -476,13 +583,19 @@ function initCCDevtool() {
 	);
 	return ccdevtool;
 }
-window.checkCCDevtool = function() {
-	const { ccdevtool, cc } = window;
+/**
+ * @description 全局检测ccdevtool变量
+ */
+window.checkCCDevtool = function () {
+	const {
+		ccdevtool,
+		cc
+	} = window;
 	if (ccdevtool) {
 		return ccdevtool;
 	}
-	if (cc && cc.director) {
+	if (cc) {
 		return initCCDevtool();
 	}
-}
+};
 checkCCDevtool();

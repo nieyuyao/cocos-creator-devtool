@@ -17,10 +17,11 @@ function onMessage(event) {
     }
     const { source, data } = event;
     if (source === window && hasCocosGameCanvas) {
-        // if unload or upgrade extension then error
         try {
             chrome.runtime.sendMessage(data);
-        } catch(e) {}
+        } catch(e) {
+            console.log(e);
+        }
     }
 }
 window.addEventListener('message', onMessage);

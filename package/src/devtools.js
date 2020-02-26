@@ -14,23 +14,21 @@ import ElInputNumber from 'element-ui/lib/input-number';
 import ElColorPicker from 'element-ui/lib/color-picker';
 import 'element-ui/lib/theme-chalk/index.css';
 import './assets/reset.css';
-import locale from 'element-ui/lib/locale/lang/en';
 import AppConnecting from './components/AppConnecting.vue';
 import App from "./components/App.vue";
-import { log, error } from './assets/utils';
-Vue.use(ElHeader, { locale });
-Vue.use(ElSwitch, { locale });
-Vue.use(ElTooltip, { locale });
-Vue.use(ElContainer, { locale });
-Vue.use(ElAside, { locale });
-Vue.use(ElInput, { locale });
-Vue.use(ElTree, { locale });
-Vue.use(ElMain, { locale });
-Vue.use(ElButton, { locale });
-Vue.use(ElTable, { locale });
-Vue.use(ElTableColumn, { locale });
-Vue.use(ElInputNumber, { locale });
-Vue.use(ElColorPicker, { locale });
+Vue.use(ElHeader);
+Vue.use(ElSwitch);
+Vue.use(ElTooltip);
+Vue.use(ElContainer);
+Vue.use(ElAside);
+Vue.use(ElInput);
+Vue.use(ElTree);
+Vue.use(ElMain);
+Vue.use(ElButton);
+Vue.use(ElTable);
+Vue.use(ElTableColumn);
+Vue.use(ElInputNumber);
+Vue.use(ElColorPicker);
 
 let app = new Vue({
     render: (h) => h(AppConnecting)
@@ -48,10 +46,9 @@ function injectScript(cb) {
     `;
     chrome.devtools.inspectedWindow.eval(injectedScript, (res, err) => {
         if (err) {
-            error(err);
+            console.log(err, 'inject scripit');
             return;
         }
-        log('ccdevtool injected!');
         cb();
     });
 }

@@ -45,6 +45,7 @@
 				</div>
 			</div>
 		</ElHeader>
+		<TimeLine :periods="periods"></TimeLine>
 		<ElContainer class="container">
 			<!-- 左边栏 -->
 			<ElAside class="left">
@@ -155,12 +156,13 @@
 
 <script>
 import Box from './Box.vue';
-import { log, error, warn } from '../assets/utils';
+import TimeLine from './TimeLine.vue';
 export default {
 	name: "App",
 	mixins: [],
 	components: {
-		Box
+		Box,
+		TimeLine
 	},
 	data() {
 		return {
@@ -173,7 +175,8 @@ export default {
 			inputNumberStep: 1,
 			showLoading: false, // 显示loading
 			timer: 0,
-			bound: {}
+			bound: {},
+			periods: []
 		};
 	},
 	mounted() {
@@ -199,7 +202,7 @@ export default {
 			this.port = chrome.runtime.connect({
 				name: `${this.tabId}`
 			});
-			log(`Connecting to window ${this.tabId}`);
+			console.log(`Connecting to window ${this.tabId}`);
 			this.port.onMessage.addListener(message => {
 				if (!message) return;
 				switch (message.name) {
@@ -214,6 +217,7 @@ export default {
 						break;
 					case 'cc-devtool: game-show':
 					case 'cc-devtool: lauch-scene':
+						this.periods = message.data;
 						this.initCCDevtool()
 							.then(() => {
 								this.loadTreeNodes();
@@ -256,7 +260,7 @@ export default {
 						err ? reject(err) : resolve(res);
 					});
 				} catch (e) {
-					error(code, e);
+					console.log(code, e, 'eval');
 					reject(e);
 				}
 			});
@@ -366,7 +370,7 @@ export default {
 						}
 					})
 					.catch(err => {
-						error(err);
+						console.log(err, 'check devtool');
 					});
 			};
 			return new Promise((resolve, reject) => {
@@ -480,7 +484,7 @@ export default {
 		}
 	}
 	.container {
-		height: calc(100vh - 70px);
+		height: calc(100vh - 160px);
 		.left, .right {
 			display: flex;
 			flex-direction: column;
