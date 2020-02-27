@@ -283,13 +283,14 @@ function initCCDevtool() {
 			};
 		},
 		/**
-		 * glPosition => screenPostion
-		 * @description 节点的gl坐标转化为全局屏幕坐标
-		 * @param {cc.Vec2} vec2 节点相对于canvas节点坐标 [中心为坐标原点]
+		 * worldPosition => screenPostion
+		 * @description 节点的world坐标转化为全局屏幕坐标
+		 * @param {cc.Vec2} vec2 world坐标 [中心为坐标原点]
 		 */
 		convertWorldToScreen(vec2) {
-			const x = vec2.x - canvasNodeWidth / 2;
-			const y = vec2.y - canvasNodeHeight / 2;
+			const designSize = cc.view.getDesignResolutionSize();
+			const x = vec2.x - canvasNodeWidth / 2 - (designSize.width - canvasNodeWidth) / 2;
+			const y = vec2.y - canvasNodeHeight / 2 - (designSize.height - canvasNodeHeight) / 2;
 			const glX = x / (canvasNodeWidth / 2);
 			const glY = y / (canvasNodeHeight / 2);
 			return new cc.Vec2(
