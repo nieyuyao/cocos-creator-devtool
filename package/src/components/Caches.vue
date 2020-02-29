@@ -5,7 +5,8 @@
             <ElTableColumn prop="name" label="Name"></ElTableColumn>
             <ElTableColumn prop="size" label="Size"></ElTableColumn>
             <ElTableColumn prop="preview" label="Preview">
-                <img :src="data.row.preview" slot-scope="data" class="preview">
+                <img v-if="data.row.preview" :src="data.row.preview" slot-scope="data" class="preview">
+                <span v-else>-</span>
             </ElTableColumn>
         </ElTable>
     </div>

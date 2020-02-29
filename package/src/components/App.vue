@@ -3,7 +3,7 @@
 		<!-- 顶部 -->
 		<ElHeader class="header">
 			<div class="title">
-				<img class="logo" src="../../icons/icon-128.png"/>
+				<img class="logo" src="../../icons/icon-128.png" />
 				<a href="https://docs.cocos.com/creator/manual/zh/" target="_blank">Cocos Creator Inpsector</a>
 			</div>
 			<!-- 功能按钮等 -->
@@ -45,19 +45,24 @@
 								<ElButton type="primary" icon="el-icon-files" size="small" circle></ElButton>
 								<span class="text-tip">Reload Extension</span>
 							</div>
-							
 						</ElTooltip>
 					</div>
 				</div>
 			</div>
 		</ElHeader>
-		<!-- 游戏加载时间线 -->
-		<TimeLine :periods="periods"></TimeLine>
 		<div class="bottom">
+			<!-- 游戏加载时间线 -->
+			<TimeLine v-show="periods.length" :periods="periods" class="timeline"></TimeLine>
 			<ElContainer class="container">
 				<!-- 左边栏 -->
 				<ElAside class="left">
-					<ElInput v-model="filterText" size="mini" clearable placeholder="Node name" prefix-icon="el-icon-search"></ElInput>
+					<ElInput
+						v-model="filterText"
+						size="mini"
+						clearable
+						placeholder="Node name"
+						prefix-icon="el-icon-search"
+					></ElInput>
 					<div class="loading" v-if="showLoading">
 						<span>
 							<i class="el-icon-loading"></i>
@@ -73,17 +78,12 @@
 						:filter-node-method="filterNode"
 						@node-click="onClickTreeNode"
 					></ElTree>
-					
 				</ElAside>
 				<ElMain class="middle">
 					<ElButton @click="printNode" type="primary" icon="el-icon-view" size="mini" round>Print</ElButton>
 					<h3 class="title">Components</h3>
 					<div v-if="nodeComps">
-						<table
-							class="el-table comp-table"
-							v-for="comp in nodeComps"
-							:key="comp.uuid"
-						>
+						<table class="el-table comp-table" v-for="comp in nodeComps" :key="comp.uuid">
 							<colgroup>
 								<col style="width: 200px;" />
 								<col style="width: 300px;" />
@@ -126,9 +126,7 @@
 						<ElTableColumn prop="key" label="Value" :width="300">
 							<template slot-scope="scope">
 								<!-- string -->
-								<span v-if="checkPropValueType(scope.row) === 1">
-									{{scope.row.value}}
-								</span>
+								<span v-if="checkPropValueType(scope.row) === 1">{{scope.row.value}}</span>
 								<!-- number -->
 								<ElInputNumber
 									v-else-if="checkPropValueType(scope.row) === 2"
@@ -156,10 +154,15 @@
 					</ElTable>
 				</ElMain>
 				<ElAside class="right">
-					<Box :bound="bound" @box-show="projectNodeToInspectLayer" @box-hide="disableNodeToInspectLayer"></Box>
+					<Box
+						:bound="bound"
+						@box-show="projectNodeToInspectLayer"
+						@box-hide="disableNodeToInspectLayer"
+					></Box>
 				</ElAside>
 			</ElContainer>
-			<Caches v-if="isShowCacheDetail" class="caches" :caches="caches"></Caches>
+			<!-- 缓存列表 -->
+			<Caches v-show="isShowCacheDetail" class="caches" :caches="cachesDetail"></Caches>
 		</div>
 	</div>
 </template>
@@ -190,14 +193,7 @@ export default {
 			bound: {},
 			periods: [],
 			isShowCacheDetail: false,
-			caches: [
-				{
-					type: 'Sprite',
-					name: '头像',
-					size: '-',
-					preview: '../../icons/icon-128.png'
-				}
-			]
+			cachesDetail: []
 		};
 	},
 	mounted() {
@@ -213,6 +209,11 @@ export default {
 		},
 		isShowStats(val) {
 			val ? this.ccdevtool.showStatsPanel() : this.ccdevtool.hideStatsPanel();
+		},
+		isShowCacheDetail(val) {
+			if (val) {
+				this.getCaches();
+			}
 		}
 	},
 	methods: {
@@ -342,6 +343,12 @@ export default {
 				this.showLoading = false;
 			}, 5000);
 		},
+		getCaches() {
+			return this.ccdevtool.getCaches().then(caches => {
+				this.cachesDetail = caches || [];
+				console.log(caches);
+			});
+		},
 		// 过滤节点
 		filterNode(value, data) {
 			if (!value) return true;
@@ -455,7 +462,7 @@ export default {
 }
 .main {
 	.title {
-		color: #409EFF;
+		color: #409eff;
 	}
 	.header {
 		display: flex;
@@ -463,8 +470,8 @@ export default {
 		align-items: center;
 		height: 70px !important;
 		padding: 0;
-		box-shadow: 0 0 8px rgba(0,0,0,0.15);
-		font-size: 12px;
+		box-shadow: 0 0 8px rgba(0, 0, 0, 0.15);
+		font-size: 10px;
 		text-align: center;
 		.title {
 			display: flex;
@@ -495,7 +502,7 @@ export default {
 						@extend %column;
 					}
 				}
-				i[class^=el-icon-] {
+				i[class^="el-icon-"] {
 					font-size: 14px;
 				}
 				.el-button--small.is-circle {
@@ -505,13 +512,40 @@ export default {
 		}
 	}
 	.bottom {
-		height: calc(100vh - 160px);
+		height: calc(100vh - 70px);
 		display: flex;
 		flex-direction: column;
 	}
+	.timeline {
+		flex-shrink: 0;
+		margin: 10px 0;
+		padding-left: 20px;
+		border-bottom: 1px solid rgba(0,0,0,0.15);
+		box-sizing: border-box;
+	}
+	.caches {
+		flex-shrink: 0;
+		height: 360px;
+		overflow: hidden;
+		.el-table__header-wrapper {
+			position: absolute;
+			top: 0;
+			left: 0;
+			z-index: 1;
+		}
+		.el-table__body-wrapper {
+			padding-top: 46px;
+			height: 360px;
+			overflow: scroll;
+			box-sizing: border-box;
+		}
+	}
 	.container {
 		flex-grow: 1;
-		.left, .right {
+		flex-shrink: 1;
+		overflow: hidden;
+		.left,
+		.right {
 			display: flex;
 			flex-direction: column;
 			height: 100%;
@@ -534,7 +568,7 @@ export default {
 		}
 		.left {
 			position: relative;
-			border-right: 1px solid rgba(0,0,0,0.15);
+			border-right: 1px solid rgba(0, 0, 0, 0.15);
 			box-sizing: border-box;
 			.loading {
 				font-size: 36px;
@@ -548,18 +582,12 @@ export default {
 			height: 100%;
 			flex-grow: 0;
 			flex-shrink: 0;
-			border-right: 1px solid rgba(0,0,0,0.15);
+			border-right: 1px solid rgba(0, 0, 0, 0.15);
 			box-sizing: border-box;
 			overflow: scroll;
 		}
 	}
-	.caches {
-		flex-shrink: 1;
-		flex-grow: 1;
-		height: 160px;
-		overflow-y: scroll;
-	}
-	.el-input-number > span[role="button"]:first-child{
+	.el-input-number > span[role="button"]:first-child {
 		margin: 1px 0 0 1px;
 	}
 	.el-color-picker__color-inner {
@@ -571,7 +599,8 @@ export default {
 		.inspect-btn {
 			text-align: right;
 		}
-		th, td {
+		th,
+		td {
 			padding: 0.5em 1em !important;
 		}
 	}
@@ -598,17 +627,14 @@ export default {
 		}
 	}
 }
-@media screen and (max-width: 460px){
+@media screen and (max-width: 460px) {
 	.main {
 		.header {
 			.title > a {
 				display: none;
 			}
-			.text-tip {
-				display: none;
-			}
-			.switch {
-				justify-content: center !important;
+			.switchs {
+				display: none !important;
 			}
 			.btn .el-tooltip {
 				justify-content: center !important;
@@ -618,7 +644,8 @@ export default {
 			.left {
 				flex-grow: 1;
 			}
-			.middle, .right {
+			.middle,
+			.right {
 				display: none;
 			}
 		}
@@ -635,6 +662,5 @@ export default {
 			}
 		}
 	}
-	
 }
 </style>

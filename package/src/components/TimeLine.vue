@@ -25,10 +25,6 @@ export default {
 
 <style lang="scss">
 .timeline {
-    margin: 10px 0;
-    padding-left: 20px;
-    border-bottom: 1px solid rgba(0,0,0,0.15);
-    box-sizing: border-box;
     .period {
         display: inline-block;
         position: relative;

@@ -121,7 +121,7 @@ function initCCDevtool() {
 					let itemName = '-';
 					let itemSize = '-';
 					let itemType = '-';
-					let preview = '-';
+					let preview = '';
 					if (item.type === 'js' || item.type === 'json') {
 						const splits = item.url.split('/');
 						if (splits && splits.length) {
